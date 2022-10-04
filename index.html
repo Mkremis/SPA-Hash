@@ -147,7 +147,6 @@
           // );
   
           if (scrollTop + clientHeight + 100 >= scrollHeight && !endPosts) {
-            alert(scrollTop + clientHeight + 100);
             page++;
             if (!hash || hash === "#/") {
               apiURL = `${POSTS}&page=${page}`;
@@ -360,8 +359,10 @@
         CardMaker() {
           return `
             <article class="post-card">
+            <a href="#/${this.slug}" data-id="${this.id}">
               <img src="${this.img}" alt="${this.title}">
                 <h2>${this.title}</h2>
+                </a>
                 <p>
                 <time datetime="${this.date}">${this.date}</time>
                 <a href="#/${this.slug}" data-id="${this.id}">Ver publicacion</a>
