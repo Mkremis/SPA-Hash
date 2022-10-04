@@ -147,7 +147,7 @@
           // );
   
           if (scrollTop + clientHeight + 100 >= scrollHeight && !endPosts) {
-            alert(scrollHeight);
+            alert(scrollTop + clientHeight + 100);
             page++;
             if (!hash || hash === "#/") {
               apiURL = `${POSTS}&page=${page}`;
