@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./assets/style.css" />
+    <link rel="shortcut icon" href="./assets/favicon.svg" type="image/x-icon" />
+    <style id="dynamic-styles"></style>
+    <title>Music Fun</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script>
+      const NAME = "rollingstone",
+        DOMAIN = `https://es.${NAME}.com`,
+        SITE = `${DOMAIN}/wp-json`,
+        API_WP = `${SITE}/wp/v2`,
+        PER_PAGE = 9, //cantidad de posts que traera por pagina
+        POSTS = `${API_WP}/posts?_embed&per_page=${PER_PAGE}`,
+        POST = `${API_WP}/posts`,
+        SEARCH = `${API_WP}/search?_embed&per_page=${PER_PAGE}&search=`,
+        GENIUSAPI = `https://genius.p.rapidapi.com/search?q=`,
+        DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`;
+      let page = 1,
+        audio;
+
+      document.addEventListener("DOMContentLoaded", App);
+
+      const Play = function (source, target) {
+        return new Promise(function (resolve, reject) {
+          // return a promise
+          audio = new Audio(); // create audio wo/ src
+          audio.preload = "auto"; // intend to play through
+          audio.autoplay = true; // autoplay when loaded
+          audio.onerror = reject; // on error, reject
+          audio.onended = resolve; // when done, resolve
+          audio.oncanplay = () => {
+            target.classList.toggle("--hidden");
+            target.parentNode
+              .querySelector(".deezer-card__album--pause")
+              .classList.toggle("--hidden");
+            target.parentElement.parentElement
+              .querySelector(".deezer-card__album--playing")
+              .classList.toggle("--hidden");
+          };
+
+          audio.src = source;
+        });
+      };
+
+      document.addEventListener("click", (e) => {
+        const { target } = e,
+          source = target.dataset.source;
+        if (target.matches(".deezer-card__album--play")) {
+          Play(source, target).then((res) => {
+            target.classList.toggle("--hidden");
+            target.parentNode
+              .querySelector(".deezer-card__album--pause")
+              .classList.toggle("--hidden");
+            target.parentElement.parentElement
+              .querySelector(".deezer-card__album--playing")
+              .classList.toggle("--hidden");
+          });
+        } else if (target.matches(".deezer-card__album--pause")) {
+          audio.pause();
+          target.classList.toggle("--hidden");
+          target.parentNode
+            .querySelector(".deezer-card__album--play")
+            .classList.toggle("--hidden");
+          target.parentElement.parentElement
+            .querySelector(".deezer-card__album--playing")
+            .classList.toggle("--hidden");
+        }
+
+        if (
+          e.target.matches(".panel-btn") ||
+          e.target.matches(".panel-btn *")
+        ) {
+          document.querySelector(".panel-btn").classList.toggle("is-active");
+          document.querySelector(".panel").classList.toggle("is-active");
+        }
+        if (e.target.matches(".menu a")) {
+          document.querySelector(".panel-btn").classList.toggle("is-active");
+          document.querySelector(".panel").classList.toggle("is-active");
+        }
+
+        if (target.matches(".post-card a")) {
+          localStorage.setItem("wpPostId", e.target.dataset.id);
+        }
+        return false;
+      });
+
+      window.addEventListener("hashchange", () => {
+        page = 1;
+        App();
+      });
+
+      // APP:
+      function App() {
+        const $root = document.getElementById("root");
+        $root.innerHTML = null;
+        $root.appendChild(Header());
+        $root.appendChild(MenuModal());
+        $root.appendChild(Main());
+        $root.appendChild(hamburger());
+        $root.appendChild(Loader());
+        Router();
+        InfiniteScroll();
+      }
+
+      // HELPERS:
+      async function ajax(props) {
+        let { url, prop, cbSuccess } = props;
+        if (!prop) prop = null;
+        await fetch(url, prop)
+          .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+          .then((json) => cbSuccess(json))
+          .catch((err) => {
+            console.log(err);
+            let message = err.statusText || "ocurrio un error";
+            document.getElementById("main").innerHTML = `
+            <div class ="error">
+            <p>error ${err.status} : ${message}</p>
+            </div>`;
+            document.querySelector(".loader").style.display = "none";
+          });
+      }
+      // INFINITE SCROLL:
+      async function InfiniteScroll() {
+        let endPosts;
+        window.addEventListener("scroll", async (e) => {
+          let query = localStorage.getItem("wpSearch"),
+            apiURL,
+            Component; //High Order Component
+
+          let { hash } = window.location;
+          let { scrollTop, clientHeight, scrollHeight } =
+            document.documentElement; //igual que abajo pero usando desestructuracion del objeto documentElement. documentElement es la forma de acceder a la etiqueta HTML del documento.
+          // const scrollTop = document.documentElement.scrollTop, //indica cuanto se aleja el scroll del margin-top del documento
+          //   clientHeight = document.documentElement.clientHeight, //indica la altura del viewport visible del cliente
+          //   scrollHeight = document.documentElement.scrollHeight; //indica la distancia total de scroll hasta el punto seleccionado del doc.
+          // console.log(
+          //   `scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight:${scrollHeight}`
+          // );
+          // console.log(hash);
+          // console.log(scrollTop + clientHeight + 10, scrollHeight);
+          if (scrollTop + clientHeight + 1 >= scrollHeight && !endPosts) {
+            page++;
+            if (!hash || hash === "#/") {
+              apiURL = `${POSTS}&page=${page}`;
+              Component = PostCards;
+            } else if (hash.includes("#/search")) {
+              apiURL = `${SEARCH}${query}&page=${page}`;
+              Component = SearchCard;
+            } else {
+              return false;
+            }
+
+            document.querySelector(".loader").style.display = "block";
+            await ajax({
+              url: apiURL,
+              cbSuccess: (posts) => {
+                if (posts.length === 0) {
+                  // document
+                  //   .getElementById("main")
+                  //   .insertAdjacentHTML("beforeend", "<p>Fin de los resultados</p>");
+                  document.querySelector(".loader").style.display = "none";
+                  endPosts = true;
+                  return endPosts;
+                }
+                let $template = "";
+                posts.forEach((post) => {
+                  // console.log(post);
+                  $template += Component(post);
+                });
+                document
+                  .getElementById("main")
+                  .insertAdjacentHTML("beforeend", $template);
+                document.querySelector(".loader").style.display = "none";
+              },
+            });
+          } else {
+            return false;
+          }
+        });
+      }
+
+      // ROUTER:
+      async function Router() {
+        let { hash } = location;
+        const $main = document.getElementById("main");
+        $main.innerHTML = null;
+
+        if (!hash || hash === "#/") {
+          await ajax({
+            url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
+            cbSuccess: (site) => {
+              document
+                .querySelector(".header")
+                .insertAdjacentElement(
+                  "beforeend",
+                  Title(site.description.rendered)
+                );
+              document.querySelector(".attachment a").href =
+                "https://es.rollingstone.com/";
+              document.querySelector(".attachment a").target = "_blank";
+            },
+          });
+
+          await ajax({
+            url: POSTS,
+            cbSuccess: (posts) => {
+              let $template = "";
+              posts.forEach((post) => ($template += PostCards(post)));
+
+              $main.innerHTML = $template;
+            },
+          });
+        } else if (hash.includes("#/search")) {
+          await ajax({
+            url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
+            cbSuccess: (site) => {
+              document
+                .querySelector(".header")
+                .insertAdjacentElement(
+                  "beforeend",
+                  Title(site.description.rendered)
+                );
+              document.querySelector(".attachment a").href =
+                "https://es.rollingstone.com/";
+              document.querySelector(".attachment a").target = "_blank";
+            },
+          });
+
+          let query = localStorage.getItem("wpSearch");
+          if (!query) {
+            document.querySelector(".loader").style.display = "none";
+            return false;
+          }
+          await ajax({
+            url: `${SEARCH}${query}`,
+            cbSuccess: (search) => {
+              let $template = "";
+              if (search.length === 0) {
+                $template = `
+                <p class="error">
+                    No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                 </p>
+                 `;
+              } else {
+                search.forEach((post) => ($template += SearchCard(post)));
+              }
+
+              $main.innerHTML = $template;
+            },
+          });
+        } else if (hash.includes("#/music")) {
+          let siteInfo =
+            "<a href='https://genius.com/' target='_blank'><img id = 'genius' src='./assets/genius-lyrics-696x442.png' alt='Genius'></a>";
+          document
+            .querySelector(".header")
+            .insertAdjacentElement("beforeend", Title(siteInfo));
+
+          let query = localStorage.getItem("musicSearch");
+          if (!query) {
+            document.querySelector(".loader").style.display = "none";
+            return false;
+          }
+
+          await ajax({
+            url: `${GENIUSAPI}${query}`,
+            prop: {
+              method: "GET",
+              headers: {
+                "x-rapidapi-key":
+                  "ce19d0164fmsh3d383efc0e85ce5p16dcb1jsnb1a4a3c79541",
+                "x-rapidapi-host": "genius.p.rapidapi.com",
+              },
+            },
+            cbSuccess: ({ response }) => {
+              // console.log(response);
+              let $template = "";
+              if (response.hits.length === 0) {
+                $template = `
+              <p class="error">
+                  No se encontraron resultados con la busqueda: <mark>${query}</mark>
+               </p>
+               `;
+              } else {
+                response.hits.forEach((hit) => ($template += SearchMusic(hit)));
+              }
+              $main.innerHTML = $template;
+            },
+          });
+        } else if (hash.includes("#/artist")) {
+          let query = localStorage.getItem("artistSearch");
+          if (!query) {
+            document.querySelector(".loader").style.display = "none";
+            return false;
+          }
+          await ajax({
+            url: `${DEEZER}${query}`,
+            prop: {
+              method: "GET",
+              headers: {
+                "X-RapidAPI-Key":
+                  "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
+                "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
+              },
+            },
+            cbSuccess: (response) => {
+              console.log(response);
+              let $template = "";
+              if (response.length === 0) {
+                $template = `<p class="error">No se encontraron resultados con la busqueda: <mark>${query}</mark></p> `;
+              } else {
+                $main.classList.replace("grid-fluid", "flex-row");
+
+                let { data } = response;
+                data.forEach((element) => {
+                  $template += Deezer(element);
+                });
+              }
+              $main.innerHTML = $template;
+            },
+          });
+        } else if (hash === "#/Contacto") {
+          $main.appendChild(ContactForm());
+        } else {
+          await ajax({
+            url: `${POST}/${localStorage.getItem("wpPostId")}`,
+            cbSuccess: (post) => {
+              // console.log(post);
+              $main.innerHTML = Post(post);
+            },
+          });
+        }
+
+        document.querySelector(".loader").style.display = "none";
+      }
+
+      // COMPONENTS:
+      class Components {
+        constructor(options) {
+          this.img = options.img;
+          this.title = options.title;
+          this.date = options.dateFormat;
+          this.slug = options.slug;
+          this.id = options.id;
+          this.artist = options.artist || null;
+          this.album_cover = options.album_cover || null;
+          this.preview = options.preview || null;
+          this.song = options.title_short || null;
+          this.track_link = options.track_link || null;
+          this.duration = options.duration || null;
+        }
+        CardMaker() {
+          return `
+            <article class="post-card">
+              <img src="${this.img}" alt="${this.title}">
+                <h2>${this.title}</h2>
+                <p>
+                <time datetime="${this.date}">${this.date}</time>
+                <a href="#/${this.slug}" data-id="${this.id}">Ver publicacion</a>
+              </p>
+              </article>
+              `;
+        }
+        HitCard() {
+          return `<article class="post-card"><a href=${this.slug} target ="_blank"><figure><img src="${this.img}" alt ="${this.title}"><figcaption>${this.title}</figcaption></a><p><time datetime="${this.date}">${this.date}</time></p></article>`;
+        }
+
+        DeezerCard() {
+          return `<article class="deezer-card">
+          <section class="deezer-card__artist">
+          <div class="deezer-card__artist-img">
+          <figure><a href=${this.slug} target="_blank"><img src="${this.img}" alt="${this.artist}" /><figcaption>${this.artist}</a><figcaption></figure>
+          </div>
+          <div class="deezer-card__artist-description">
+          <div><h4>Album:</h4><p>${this.title}</p></div>
+          <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
+          <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
+          </div>
+          </section>
+          <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+          <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
+          <div class="deezer-card__album-button --hidden">
+           <button class="deezer-card__album--play" data-source = "${this.preview}"></button>
+           <button class="deezer-card__album--pause --hidden" data-source = "${this.preview}"></button>
+           </div>
+           <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music"/>
+          </section>
+          </article>`;
+        }
+      }
+      function ContactForm() {
+        const $form = document.createElement("form"),
+          $styles = document.getElementById("dynamic-styles");
+        $styles.innerHTML = `
+      .contact-form{
+       --form-ok-color: #4caf50;
+       --form-error-color: #f44336;
+       margin-left: auto;
+       margin-right: auto;
+       width: 80%;
+      }
+
+      .contact-form >*{
+       padding: 0.5rem;
+       margin: 1rem auto;
+       display: block;
+       width: 100%;
+       font-size: 1rem;
+       font-family: sans-serif;
+      }
+
+      .contact-form textarea{
+       resize: none;
+      }
+
+      .contact-form legend,
+      .contact-form-response{
+       font-size: 1.5rem;
+       font-weight: bold;
+       text-align: center;
+      }
+
+      .contact-form input[type = "submit"]{
+       width: 50%;
+       font-weight: bold;
+       cursor: pointer;
+      }
+
+      .contact-form *::placeholder{
+       color: black;
+      }
+
+      .contact-form [required]:valid{
+       border: thin solid var(--form-ok-color);
+      }
+
+      .contact-form [required]:invalid{
+       border: thin solid var(--form-error-color);
+      }
+
+      .contact-form-error{
+       margin-top: -1rem;
+       font-size: 80%;
+       background-color: var(--form-error-color);
+       color: #fff;
+       transition: all 800ms ease;
+      }
+
+      .contact-form-error.is-active{
+       display: block;
+       animation: show-message 1s 1 normal 0s ease-out both;
+      }
+
+      .none{
+      display: none;
+      }
+
+      @keyframes show-message{
+       0%{
+        visiblity: hidden;
+        opacity: 0;
+          }
+       100%{
+        visibility: visible;
+        opacity: 1;
+          }
+      }`;
+        $form.classList.add("contact-form");
+        $form.id = "contact-form";
+        $form.action = "https://formsubmit.co/martinkremis@hotmail.com";
+        $form.method = "POST";
+        let $legend = document.createElement("legend");
+        $legend.textContent = "Envianos tus comentarios";
+        $form.appendChild($legend);
+
+        const fields = [
+          {
+            name: "name",
+            type: "text",
+            placeholder: "Escribe tu nombre",
+            title: "Nombre solo acepta letras y espacios en blanco",
+            pattern: "^[A-Za-zÑñÁáÉéÍíÓóÚúÜü\\s]+$",
+          },
+          {
+            name: "email",
+            type: "email",
+            placeholder: "Escribe tu correo electronico",
+            title: "email no valido",
+            pattern:
+              "^[a-z0-9]+(\\.[_a-z0-9]+)*@[a-z0-9-]+(\\.[a-z0-9-]+)*(\\.[a-z]{2,15})$",
+          },
+          {
+            name: "subject",
+            type: "text",
+            placeholder: "Asunto a tratar",
+            title: "el asunto no puede estar vacio",
+            pattern: "^(w+S+)$",
+          },
+        ];
+
+        fields.forEach((field) => {
+          const $input = document.createElement("input");
+          $input.type = field.type;
+          $input.name = field.name;
+          $input.placeholder = field.placeholder;
+          $input.title = field.title;
+          if (field.name !== "subject") $input.pattern = field.pattern;
+          $input.required = true;
+          $input.classList.add("txtInput");
+          $form.appendChild($input);
+        });
+
+        /////////////////textarea////////////////////////
+        const $txtarea = document.createElement("textarea");
+        $txtarea.name = "comments";
+        $txtarea.placeholder = "Escribe tus comentarios";
+        $txtarea.title = "maximo permitido 256 caracteres";
+        $txtarea.setAttribute("data-pattern", "^.{1,255}$");
+        $txtarea.cols = "50";
+        $txtarea.rows = "5";
+        $txtarea.required = true;
+        $txtarea.classList.add("txtInput");
+        $form.appendChild($txtarea);
+        /////////////////submit////////////////////////
+        const $submit = document.createElement("input");
+        $submit.type = "submit";
+        $submit.value = "Enviar";
+        $form.appendChild($submit);
+        /////////////////loader////////////////////////
+        let $div = document.createElement("div");
+        $div.classList.add("contact-form-loader", "none");
+
+        const loader = document.createElement("img");
+        loader.src = "/assets/loader.svg";
+        loader.alt = "cargando";
+        $div.appendChild(loader);
+        $form.appendChild($div);
+        /////////////////confirm////////////////////////
+        $div = document.createElement("div");
+        $div.classList.add("contact-form-response", "none");
+        const $p = document.createElement("p");
+        $p.textContent = "Los datos han sido enviados";
+        $div.appendChild($p);
+        $form.appendChild($div);
+
+        function validationsForm() {
+          const $form = document.querySelector(".contact-form"),
+            $inputs = document.querySelectorAll(".contact-form [required]");
+          $inputs.forEach((input) => {
+            const $span = document.createElement("span");
+            $span.id = input.name;
+            $span.classList.add("contact-form-error", "none");
+            $span.textContent = input.title;
+            input.insertAdjacentElement("afterend", $span);
+          });
+          document.addEventListener("keyup", (e) => {
+            if (e.target.matches(".contact-form [required]")) {
+              let pattern = e.target.pattern || e.target.dataset.pattern;
+              if (pattern && e.target !== "") {
+                let regex = new RegExp(pattern);
+                return !regex.exec(e.target.value)
+                  ? document
+                      .getElementById(e.target.name)
+                      .classList.add("is-active")
+                  : document
+                      .getElementById(e.target.name)
+                      .classList.remove("is-active");
+              }
+              if (!pattern) {
+                return e.target.value === ""
+                  ? document
+                      .getElementById(e.target.name)
+                      .classList.add("is-active")
+                  : document
+                      .getElementById(e.target.name)
+                      .classList.remove("is-active");
+              }
+            }
+          });
+
+          document.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const $loader = document.querySelector(".contact-form-loader"),
+              $response = document.querySelector(".contact-form-response");
+            $loader.classList.remove("none");
+            fetch("https://formsubmit.co/ajax/martinkremis@gmail.com", {
+              method: "POST",
+              body: new FormData(e.target),
+            })
+              .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+              .then((jsn) => {
+                $loader.classList.add("none");
+                $response.classList.remove("none");
+                $response.innerHTML = `<p>${jsn.message}</p>`;
+                $form.reset();
+              })
+              .catch((err) => {
+                $loader.classList.add("none");
+                let message =
+                  err.statusText ||
+                  "Ocurrio un error al enviar el mensaje, vuelve a intentarlo";
+                $response.classList.remove("none");
+                $response.innerHTML = `<p>${err.status} : ${message}</p>`;
+                setTimeout(() => {
+                  $response.classList.add("none");
+                }, 3000);
+              });
+          });
+        }
+
+        setTimeout(() => {
+          validationsForm();
+        }, 100);
+        return $form;
+      }
+      function Deezer(props) {
+        // console.log(props);
+        let {
+            album: { cover_big, title },
+            artist: { link, name, picture_medium },
+            preview,
+            title_short,
+            duration,
+          } = props,
+          album_cover = cover_big,
+          track_link = props.link,
+          slug = link,
+          artist = name,
+          img = picture_medium;
+
+        let card = new Components({
+          img,
+          title,
+          slug,
+          artist,
+          album_cover,
+          preview,
+          title_short,
+          track_link,
+          duration,
+        });
+        return card.DeezerCard();
+      }
+      function hamburger() {
+        const $menuHamburger = document.createElement("button");
+        $menuHamburger.classList.add(
+          "panel-btn",
+          "hamburger",
+          "hamburger--elastic"
+        );
+        $menuHamburger.type = "button";
+        $menuHamburger.innerHTML = `<span class="hamburger-box"><span class="hamburger-inner"></span></span>`;
+        return $menuHamburger;
+      }
+      function Header() {
+        const $header = document.createElement("header");
+        $header.classList.add("header");
+        $header.appendChild(Menu());
+        $header.appendChild(SearchForm());
+        return $header;
+      }
+      function Loader() {
+        const $loader = document.createElement("img");
+        $loader.src = "./assets/loader.svg";
+        $loader.alt = "Cargando..";
+        $loader.classList.add("loader");
+        return $loader;
+      }
+      function Main() {
+        const $main = document.createElement("main");
+        $main.id = "main";
+        $main.classList.add("grid-fluid");
+        return $main;
+      }
+      function Menu() {
+        const $menu = document.createElement("nav");
+        $menu.classList.add("menu-top");
+        $menu.innerHTML = `
+        <a href="#/">Home</a>
+        <span>-</span>
+        <a href="#/search" class="search-link">Posts</a>
+        <span>-</span>
+         <a href="#/music" class="search-link">Musica</a>
+        <span>-</span>
+         <a href="#/artist"class="search-link">Deezer</a>
+        <span>-</span>
+        <a href="#/Contacto">Contacto</a>
+        `;
+        return $menu;
+      }
+      function MenuModal() {
+        const $menuModal = document.createElement("aside");
+        $menuModal.classList.add("panel");
+        $menuModal.innerHTML = `
+        <nav class = "menu">
+        <a href="#/">Home</a>
+        <a href="#/search" class="search-link">Posts</a>
+         <a href="#/music" class="search-link">Musica</a>
+         <a href="#/artist"class="search-link">Deezer</a>
+        <a href="#/Contacto">Contacto</a>
+        </nav>`;
+        return $menuModal;
+      }
+      function Post(props) {
+        let { content, date, title } = props,
+          dateFormated = new Date(date).toLocaleDateString();
+        return `
+        <section class="post-page">
+          <aside>
+            <h2>${title.rendered}</h2>
+            <time datetime="2022-09-15">${dateFormated}</time>
+          </aside>
+          <hr>
+          <article>${content.rendered}</article>
+        </section>
+        `;
+      }
+      function PostCards(props) {
+        // console.log(props);
+        let { _embedded, date, id, slug, title } = props,
+          dateFormat = new Date(date).toLocaleTimeString(),
+          img = _embedded["wp:featuredmedia"]
+            ? _embedded["wp:featuredmedia"][0].source_url
+            : "./assets/favicon.svg";
+        title = title.rendered;
+
+        let card = new Components({ img, title, dateFormat, slug, id });
+        return card.CardMaker();
+      }
+
+      function SearchCard(props) {
+        // console.log(props);
+        let { id, title, _embedded } = props,
+          slug = _embedded.self[0].slug,
+          date = _embedded.self[0].date,
+          img = _embedded.self[0].yoast_head_json.og_image
+            ? _embedded.self[0].yoast_head_json.og_image[0].url
+            : "../assets/favicon.svg",
+          dateFormat = new Date(date).toLocaleTimeString();
+
+        let card = new Components({ img, title, dateFormat, slug, id });
+        return card.CardMaker();
+      }
+      function SearchForm() {
+        const $form = document.createElement("form"),
+          $input = document.createElement("input");
+        $input.type = "search";
+        $input.name = "search";
+        $input.autocomplete = "off";
+        $input.style.display = "none";
+        $form.classList.add("search-form");
+        $form.appendChild($input);
+
+        if (location.hash.includes("#/search")) {
+          $input.style.display = "block";
+          $input.placeholder = "Buscar posts..";
+          $input.value = localStorage.getItem("wpSearch");
+        }
+        if (location.hash.includes("#/music")) {
+          $input.style.display = "block";
+          $input.placeholder = "Buscar artista..";
+          $input.value = localStorage.getItem("musicSearch");
+        }
+        if (location.hash.includes("#/artist")) {
+          $input.style.display = "block";
+          $input.placeholder = "Escuchar musica..";
+          $input.value = localStorage.getItem("artistSearch");
+        }
+        document.addEventListener("search", (e) => {
+          if (!e.target.matches("input[type='search']")) return false;
+          if (!e.target.value) localStorage.clear("wpSearch");
+        });
+
+        document.addEventListener("submit", (e) => {
+          if (!e.target.matches(".search-form")) return false;
+          e.preventDefault();
+          if (location.hash.includes("#/search")) {
+            localStorage.setItem("wpSearch", e.target.search.value);
+            location.hash = `#/search?search=${e.target.search.value}`;
+          }
+          if (location.hash.includes("#/music")) {
+            localStorage.setItem("musicSearch", e.target.search.value);
+            location.hash = `#/music=${e.target.search.value}`;
+          }
+          if (location.hash.includes("#/artist")) {
+            localStorage.setItem("artistSearch", e.target.search.value);
+            location.hash = `#/artist=${e.target.search.value}`;
+          }
+        });
+
+        return $form;
+      }
+      function SearchMusic(props) {
+        // console.log(props);
+        let {
+            id,
+            full_title,
+            header_image_thumbnail_url,
+            primary_artist,
+            release_date_for_display,
+            url,
+          } = props.result,
+          artist = primary_artist.name,
+          title = full_title,
+          dateFormat = release_date_for_display,
+          img = header_image_thumbnail_url || "./assets/favicon.svg",
+          slug = url;
+
+        let card = new Components({ id, title, img, artist, dateFormat, slug });
+        return card.HitCard();
+      }
+      function Title(logo) {
+        const $div = document.createElement("div");
+        $div.classList.add("logo");
+        $div.innerHTML = `${logo}`;
+        return $div;
+      }
+      function ShowButton(element) {
+        element
+          .querySelector(".deezer-card__album-button")
+          .classList.toggle("--hidden");
+      }
+    </script>
+  </body>
+</html>
