@@ -146,7 +146,7 @@
           //   `scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight:${scrollHeight}`
           // );
           // console.log(hash);
-           alert(scrollTop + clientHeight + 10, scrollHeight);
+          if(scrollTop + clientHeight===scrollHeight/2 ) alert(scrollTop + clientHeight + 10+"  "+scrollHeight);
           if (scrollTop + clientHeight + 10 >= scrollHeight && !endPosts) {
             page++;
             if (!hash || hash === "#/") {
