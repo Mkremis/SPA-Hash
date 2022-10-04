@@ -146,7 +146,8 @@
           //   `scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight:${scrollHeight}`
           // );
   
-          if (scrollTop + clientHeight + 30 >= scrollHeight && !endPosts) {
+          if (scrollTop + clientHeight + 35 >= scrollHeight && !endPosts) {
+            alert(scrollHeight);
             page++;
             if (!hash || hash === "#/") {
               apiURL = `${POSTS}&page=${page}`;
