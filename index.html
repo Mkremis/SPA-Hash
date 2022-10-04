@@ -147,7 +147,8 @@
           // );
           // console.log(hash);
           // console.log(scrollTop + clientHeight + 10, scrollHeight);
-          if (scrollTop + clientHeight + 10 >= scrollHeight && !endPosts) {
+          if (scrollTop + clientHeight + 1 >= scrollHeight && !endPosts) {
+            alert("cargando");
             page++;
             if (!hash || hash === "#/") {
               apiURL = `${POSTS}&page=${page}`;
