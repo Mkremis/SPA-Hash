@@ -7,6 +7,7 @@
   --second-modal-color: rgba(34, 34, 34, 0.85);
   --container-width: 1200px;
   --Dark-grayish-blue: #bdbfc2;
+  --Very-vark-blue: hsl(220, 13%, 13%);
 }
 
 html {
@@ -102,11 +103,25 @@ img {
   padding: 1rem;
   width: 80%;
   background-color: var(--main-color);
-}
-.post-card p {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
 }
+
+.post-card__header {
+  margin: 1px;
+}
+
+.post-card__description {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.post-card__description > * {
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
 .post-page {
   margin: 1rem auto;
   padding: 1rem;
