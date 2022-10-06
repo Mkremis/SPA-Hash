@@ -38,7 +38,7 @@
           audio.autoplay = true; // autoplay when loaded
           audio.onerror = reject; // on error, reject
           audio.onended = resolve; // when done, resolve
-          audio.oncanplay = () => {
+          audio.oncanplaythrough = () => {
             playing = source;
             target.classList.toggle("--hidden");
             target.parentNode
