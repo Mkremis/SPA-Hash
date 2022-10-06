@@ -48,20 +48,19 @@
               .querySelector(".deezer-card__album--playing")
               .classList.toggle("--hidden");
           };
+        }).then((res) => {
+          target.classList.toggle("--hidden");
+          target.parentNode
+            .querySelector(".deezer-card__album--pause")
+            .classList.toggle("--hidden");
+          target.parentElement.parentElement
+            .querySelector(".deezer-card__album--playing")
+            .classList.toggle("--hidden");
         });
       };
-
       const PlayAudio = function (source, target) {
         if (!playing) {
-          Play(source, target).then((res) => {
-            target.classList.toggle("--hidden");
-            target.parentNode
-              .querySelector(".deezer-card__album--pause")
-              .classList.toggle("--hidden");
-            target.parentElement.parentElement
-              .querySelector(".deezer-card__album--playing")
-              .classList.toggle("--hidden");
-          });
+          Play(source, target);
         } else {
           audio.pause();
           document
@@ -73,15 +72,7 @@
           document
             .querySelector(`[data-playing = "${playing}"]`)
             .classList.toggle("--hidden");
-          Play(source, target).then((res) => {
-            target.classList.toggle("--hidden");
-            target.parentNode
-              .querySelector(".deezer-card__album--pause")
-              .classList.toggle("--hidden");
-            target.parentElement.parentElement
-              .querySelector(".deezer-card__album--playing")
-              .classList.toggle("--hidden");
-          });
+          Play(source, target);
         }
       };
 
@@ -113,8 +104,9 @@
           document.querySelector(".panel").classList.toggle("is-active");
         }
 
-        if (target.matches(".post-card a")) {
+        if (target.matches(".post-card a *")) {
           localStorage.setItem("wpPostId", e.target.dataset.id);
+          console.log(target.dataset);
         }
         return false;
       });
@@ -381,19 +373,23 @@
         }
         CardMaker() {
           return `
-                <article class="post-card">
-                 <div data-id="${this.id}" class="post-card__header">
-                   <a href="#/${this.slug}" data-id="${this.id}">
-                    <img src="${this.img}" alt="${this.title}">
-                    <h2>${this.title}</h2>
-                     </a>
-                     </div>
-                     <div class="post-card__description">
-                     <p><time datetime="${this.date}">${this.date}</time></p>
-                     <p class ="post-card__description-author">${this.author.toLowerCase()}</p>
-                   </div>
-                   </article>
-                   `;
+          <article class="post-card" data-id = "${this.id}">
+      <div class="post-card__header">
+        <a href="#/${this.slug}" data-id="${this.id}">
+        <img src="${this.img}" alt="${this.title}" data-id="${this.id}"/>
+          </a>
+           <a href="#/${this.slug}" data-id="${this.id}">
+          <p data-id="${this.id}">${this.title}</p>
+        </a>
+      </div>
+      <div class="post-card__description">
+        <p><time datetime="${this.date}">${this.date}</time></p>
+        <p class="post-card__description-author">
+          ${this.author.toLowerCase()}
+        </p>
+      </div>
+    </article>
+          `;
         }
         HitCard() {
           return `<article class="post-card"><a href=${this.slug} target ="_blank"><figure><img src="${this.img}" alt ="${this.title}"><figcaption>${this.title}</figcaption></a><p><time datetime="${this.date}">${this.date}</time></p></article>`;
