@@ -107,6 +107,10 @@ img {
   flex-direction: column;
   justify-content: space-between;
 }
+.post-card a {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
 
 .post-card__header {
   margin: 1px;
