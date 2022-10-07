@@ -22,6 +22,9 @@
         POSTS = `${API_WP}/posts?_embed&per_page=${PER_PAGE}`,
         POST = `${API_WP}/posts`,
         SEARCH = `${API_WP}/search?_embed&per_page=${PER_PAGE}&search=`,
+        YOUTUBE =
+          "https://youtube-search-and-download.p.rapidapi.com/trending?type=mu&hl=en&gl=US",
+        VIDEO = `https://youtube-search-and-download.p.rapidapi.com/video?id=`,
         GENIUSAPI = `https://genius.p.rapidapi.com/search?q=`,
         DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`;
       let page = 1,
@@ -75,10 +78,103 @@
           Play(source, target);
         }
       };
+      const VideoPlay = function (source, target) {
+        let { url } = source.streamingData.formats[2];
+        console.log(source);
+        const Player = new Promise(function (resolve, reject) {
+          // return a promise
+          $video = document.createElement("video");
+          $video.setAttribute("src", url);
+          $video.muted = false;
+          $video.height = 240; // 👈️ in px
+          $video.width = 320; // 👈️ in px
+          $video.preload = "auto"; // intend to play through
+          $video.autoplay = true; // autoplay when loaded
+          $video.onerror = reject; // on error, reject
+          $video.onended = resolve; // when done, resolve
+          $video.oncanplaythrough = () => {
+            document.getElementById("root").classList.toggle("--hidden");
+            const $frame = document.createElement("div");
+            $frame.classList.add("frame");
+            document.querySelector("body").appendChild($frame);
+            $frame.appendChild($video);
+            const $stop = document.createElement("img");
+            $stop.src = "./assets/close.svg";
+            $stop.classList.add("close", "--hidden");
+            $frame.appendChild($stop);
+
+            $frame.addEventListener("mouseenter", () =>
+              $stop.classList.toggle("--hidden")
+            );
+            $frame.addEventListener("mouseleave", () =>
+              $stop.classList.toggle("--hidden")
+            );
+            $stop.addEventListener("click", (e) => {
+              $video.pause();
+              resolve($frame);
+            });
+
+            const $styles = document.getElementById("dynamic-styles");
+            $styles.innerHTML += `
+            .frame{
+              position: relative;
+              width: 100vw;
+              height: 100vh;
+              background-color: #000;
+            }
+            video{
+              min-width: 100%;
+              min-height: 100%;
+            }
+            .close{
+               width: 50px;
+               height: 50px;
+               border: 0;
+               position: absolute;
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+            }
+
+              `;
+          };
+        }).then(($frame) => {
+          $frame.remove();
+          document.getElementById("root").classList.toggle("--hidden");
+        });
+        return Player;
+      };
+      const VideoInfo = async function (target) {
+        const source = target.dataset.source_video;
+        await ajax({
+          url: `${VIDEO}${source}`,
+          prop: {
+            method: "GET",
+            headers: {
+              "X-RapidAPI-Key":
+                "0b048e90e6mshcd711004ccd8b43p1c3fbajsnd92706b2c07f",
+              "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
+            },
+          },
+          cbSuccess: (search) => {
+            let $template = "";
+            if (search.length === 0) {
+              $template = `
+                       <p class="error">
+                           No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                        </p>
+                        `;
+            } else {
+              VideoPlay(search, target);
+            }
+          },
+        });
+      };
 
       document.addEventListener("click", (e) => {
         const { target } = e,
-          source = target.dataset.source;
+          source = target.dataset.source || null;
+
         if (target.matches(".deezer-card__album--play")) {
           PlayAudio(source, target);
         } else if (target.matches(".deezer-card__album--pause")) {
@@ -139,9 +235,9 @@
             console.log(err);
             let message = err.statusText || "ocurrio un error";
             document.getElementById("main").innerHTML = `
-                 <div class ="error">
-                 <p>error ${err.status} : ${message}</p>
-                 </div>`;
+                   <div class ="error">
+                   <p>error ${err.status} : ${message}</p>
+                   </div>`;
             document.querySelector(".loader").style.display = "none";
           });
       }
@@ -259,10 +355,10 @@
               let $template = "";
               if (search.length === 0) {
                 $template = `
-                     <p class="error">
-                         No se encontraron resultados con la busqueda: <mark>${query}</mark>
-                      </p>
-                      `;
+                       <p class="error">
+                           No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                        </p>
+                        `;
               } else {
                 console.log(search);
                 search.forEach((post) => ($template += SearchCard(post)));
@@ -299,10 +395,10 @@
               let $template = "";
               if (response.hits.length === 0) {
                 $template = `
-                   <p class="error">
-                       No se encontraron resultados con la busqueda: <mark>${query}</mark>
-                    </p>
-                    `;
+                     <p class="error">
+                         No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                      </p>
+                      `;
               } else {
                 response.hits.forEach((hit) => ($template += SearchMusic(hit)));
               }
@@ -341,6 +437,32 @@
               $main.innerHTML = $template;
             },
           });
+        } else if (hash === "#/youtube") {
+          await ajax({
+            url: YOUTUBE,
+            prop: {
+              method: "GET",
+              headers: {
+                "X-RapidAPI-Key":
+                  "0b048e90e6mshcd711004ccd8b43p1c3fbajsnd92706b2c07f",
+                "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
+              },
+            },
+            cbSuccess: ({ contents }) => {
+              // console.log(contents);
+              let $template = "";
+              if (contents.length === 0) {
+                $template = `
+                       <p class="error">
+                           No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                        </p>
+                        `;
+              } else {
+                contents.forEach((content) => ($template += Youtube(content)));
+              }
+              $main.innerHTML = $template;
+            },
+          });
         } else if (hash === "#/Contacto") {
           $main.appendChild(ContactForm());
         } else {
@@ -370,26 +492,28 @@
           this.song = options.title_short || null;
           this.track_link = options.track_link || null;
           this.duration = options.duration || null;
+          this.channelName = options.channelName || null;
+          this.viewCountText = options.viewCountText || null;
         }
         CardMaker() {
           return `
-          <article class="post-card" data-id = "${this.id}">
-      <div class="post-card__header">
-        <a href="#/${this.slug}" data-id="${this.id}">
-        <img src="${this.img}" alt="${this.title}" data-id="${this.id}"/>
+            <article class="post-card" data-id = "${this.id}">
+        <div class="post-card__header">
+          <a href="#/${this.slug}" data-id="${this.id}">
+          <img src="${this.img}" alt="${this.title}" data-id="${this.id}"/>
+            </a>
+             <a href="#/${this.slug}" data-id="${this.id}">
+            <p data-id="${this.id}">${this.title}</p>
           </a>
-           <a href="#/${this.slug}" data-id="${this.id}">
-          <p data-id="${this.id}">${this.title}</p>
-        </a>
-      </div>
-      <div class="post-card__description">
-        <p><time datetime="${this.date}">${this.date}</time></p>
-        <p class="post-card__description-author">
-          ${this.author.toLowerCase()}
-        </p>
-      </div>
-    </article>
-          `;
+        </div>
+        <div class="post-card__description">
+          <p><time datetime="${this.date}">${this.date}</time></p>
+          <p class="post-card__description-author">
+            ${this.author.toLowerCase()}
+          </p>
+        </div>
+      </article>
+            `;
         }
         HitCard() {
           return `<article class="post-card"><a href=${this.slug} target ="_blank"><figure><img src="${this.img}" alt ="${this.title}"><figcaption>${this.title}</figcaption></a><p><time datetime="${this.date}">${this.date}</time></p></article>`;
@@ -397,104 +521,126 @@
 
         DeezerCard() {
           return `<article class="deezer-card">
-               <section class="deezer-card__artist">
-               <div class="deezer-card__artist-img">
-               <figure><a href=${this.slug} target="_blank"><img src="${this.img}" alt="${this.artist}" /><figcaption>${this.artist}</a><figcaption></figure>
-               </div>
-               <div class="deezer-card__artist-description">
-               <div><h4>Album:</h4><p>${this.title}</p></div>
-               <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
-               <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
-               </div>
-               </section>
-               <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
-               <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
-               <div class="deezer-card__album-button --hidden">
-                <button class="deezer-card__album--play" data-source = "${this.preview}"></button>
-                <button class="deezer-card__album--pause --hidden" data-pause = "${this.preview}"></button>
-                </div>
-                <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
-               </section>
-               </article>`;
+                 <section class="deezer-card__artist">
+                 <div class="deezer-card__artist-img">
+                 <figure><a href=${this.slug} target="_blank"><img src="${this.img}" alt="${this.artist}" /><figcaption>${this.artist}</a><figcaption></figure>
+                 </div>
+                 <div class="deezer-card__artist-description">
+                 <div><h4>Album:</h4><p>${this.title}</p></div>
+                 <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
+                 <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
+                 </div>
+                 </section>
+                 <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+                 <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
+                 <div class="deezer-card__album-button --hidden">
+                  <button class="deezer-card__album--play" data-source = "${this.preview}"></button>
+                  <button class="deezer-card__album--pause --hidden" data-pause = "${this.preview}"></button>
+                  </div>
+                  <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
+                 </section>
+                 </article>`;
+        }
+        YoutubeCard() {
+          return `<article class="youtube-card">
+                   <section class ="youtube-card__element">
+                   <div class="youtube-card__preview" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+                   <img class="youtube-card__preview-img" src="${this.img}" alt="${this.title}"/>
+                   <div class="dinamic-button --hidden">
+                    <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick = "VideoInfo(this)"></button>
+                    <button class="youtube-card__album--pause --hidden" data-pauseVideo = "${this.id}"></button>
+                    </div>
+                   </div>
+                    <div class="youtube-card_description">
+                       <div class="youtube-card_description__title">
+                   <h4>${this.title}</h4>
+                   </div>
+                    <div class="youtube-card_description__details">
+                   <p>${this.channelName}</p>
+                   <p>${this.viewCountText}<span> - <span>${this.duration}</p>
+                   </div>
+                   </div>
+                   </section>
+                   </article>`;
         }
       }
       function ContactForm() {
         const $form = document.createElement("form"),
           $styles = document.getElementById("dynamic-styles");
         $styles.innerHTML = `
-           .contact-form{
-            --form-ok-color: #4caf50;
-            --form-error-color: #f44336;
-            margin-left: auto;
-            margin-right: auto;
-            width: 80%;
-           }
+             .contact-form{
+              --form-ok-color: #4caf50;
+              --form-error-color: #f44336;
+              margin-left: auto;
+              margin-right: auto;
+              width: 80%;
+             }
 
-           .contact-form >*{
-            padding: 0.5rem;
-            margin: 1rem auto;
-            display: block;
-            width: 100%;
-            font-size: 1rem;
-            font-family: sans-serif;
-           }
+             .contact-form >*{
+              padding: 0.5rem;
+              margin: 1rem auto;
+              display: block;
+              width: 100%;
+              font-size: 1rem;
+              font-family: sans-serif;
+             }
 
-           .contact-form textarea{
-            resize: none;
-           }
+             .contact-form textarea{
+              resize: none;
+             }
 
-           .contact-form legend,
-           .contact-form-response{
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-align: center;
-           }
+             .contact-form legend,
+             .contact-form-response{
+              font-size: 1.5rem;
+              font-weight: bold;
+              text-align: center;
+             }
 
-           .contact-form input[type = "submit"]{
-            width: 50%;
-            font-weight: bold;
-            cursor: pointer;
-           }
+             .contact-form input[type = "submit"]{
+              width: 50%;
+              font-weight: bold;
+              cursor: pointer;
+             }
 
-           .contact-form *::placeholder{
-            color: black;
-           }
+             .contact-form *::placeholder{
+              color: black;
+             }
 
-           .contact-form [required]:valid{
-            border: thin solid var(--form-ok-color);
-           }
+             .contact-form [required]:valid{
+              border: thin solid var(--form-ok-color);
+             }
 
-           .contact-form [required]:invalid{
-            border: thin solid var(--form-error-color);
-           }
+             .contact-form [required]:invalid{
+              border: thin solid var(--form-error-color);
+             }
 
-           .contact-form-error{
-            margin-top: -1rem;
-            font-size: 80%;
-            background-color: var(--form-error-color);
-            color: #fff;
-            transition: all 800ms ease;
-           }
+             .contact-form-error{
+              margin-top: -1rem;
+              font-size: 80%;
+              background-color: var(--form-error-color);
+              color: #fff;
+              transition: all 800ms ease;
+             }
 
-           .contact-form-error.is-active{
-            display: block;
-            animation: show-message 1s 1 normal 0s ease-out both;
-           }
+             .contact-form-error.is-active{
+              display: block;
+              animation: show-message 1s 1 normal 0s ease-out both;
+             }
 
-           .none{
-           display: none;
-           }
+             .none{
+             display: none;
+             }
 
-           @keyframes show-message{
-            0%{
-             visiblity: hidden;
-             opacity: 0;
-               }
-            100%{
-             visibility: visible;
-             opacity: 1;
-               }
-           }`;
+             @keyframes show-message{
+              0%{
+               visiblity: hidden;
+               opacity: 0;
+                 }
+              100%{
+               visibility: visible;
+               opacity: 1;
+                 }
+             }`;
         $form.classList.add("contact-form");
         $form.id = "contact-form";
         $form.action = "https://formsubmit.co/martinkremis@hotmail.com";
@@ -706,44 +852,46 @@
         const $menu = document.createElement("nav");
         $menu.classList.add("menu-top");
         $menu.innerHTML = `
-             <a href="#/">Home</a>
-             <span>-</span>
-             <a href="#/search" class="search-link">Posts</a>
-             <span>-</span>
-              <a href="#/music" class="search-link">Musica</a>
-             <span>-</span>
-              <a href="#/artist"class="search-link">Deezer</a>
-             <span>-</span>
-             <a href="#/Contacto">Contacto</a>
-             `;
+               <a href="#/">Home</a>
+               <span>-</span>
+               <a href="#/search" class="search-link">Posts</a>
+               <span>-</span>
+                <a href="#/music" class="search-link">Musica</a>
+               <span>-</span>
+               <a href="#/youtube" class="search-link">Youtube</a>
+               <span>-</span>
+                <a href="#/artist"class="search-link">Deezer</a>
+               <span>-</span>
+               <a href="#/Contacto">Contacto</a>
+               `;
         return $menu;
       }
       function MenuModal() {
         const $menuModal = document.createElement("aside");
         $menuModal.classList.add("panel");
         $menuModal.innerHTML = `
-             <nav class = "menu">
-             <a href="#/">Home</a>
-             <a href="#/search" class="search-link">Posts</a>
-              <a href="#/music" class="search-link">Musica</a>
-              <a href="#/artist"class="search-link">Deezer</a>
-             <a href="#/Contacto">Contacto</a>
-             </nav>`;
+               <nav class = "menu">
+               <a href="#/">Home</a>
+               <a href="#/search" class="search-link">Posts</a>
+                <a href="#/music" class="search-link">Musica</a>
+                <a href="#/artist"class="search-link">Deezer</a>
+               <a href="#/Contacto">Contacto</a>
+               </nav>`;
         return $menuModal;
       }
       function Post(props) {
         let { content, date, title } = props,
           dateFormated = new Date(date).toLocaleDateString();
         return `
-             <section class="post-page">
-               <aside>
-                 <h2>${title.rendered}</h2>
-                 <time datetime="2022-09-15">${dateFormated}</time>
-               </aside>
-               <hr>
-               <article>${content.rendered}</article>
-             </section>
-             `;
+               <section class="post-page">
+                 <aside>
+                   <h2>${title.rendered}</h2>
+                   <time datetime="2022-09-15">${dateFormated}</time>
+                 </aside>
+                 <hr>
+                 <article>${content.rendered}</article>
+               </section>
+               `;
       }
       function PostCards(props) {
         // console.log(props);
@@ -853,9 +1001,40 @@
         return $div;
       }
       function ShowButton(element) {
-        element
-          .querySelector(".deezer-card__album-button")
-          .classList.toggle("--hidden");
+        if (element.matches(".deezer-card__album")) {
+          element
+            .querySelector(".deezer-card__album-button")
+            .classList.toggle("--hidden");
+        } else {
+          element.querySelector(".dinamic-button").classList.toggle("--hidden");
+        }
+      }
+      function Youtube({ video }) {
+        let {
+            channelId,
+            channelName,
+            lengthText,
+            publishedTimeText,
+            title,
+            videoId,
+            viewCountText,
+          } = video,
+          { url } = video.thumbnails[2],
+          duration = publishedTimeText,
+          id = videoId,
+          img = url;
+
+        let card = new Components({
+          channelId,
+          channelName,
+          duration,
+          publishedTimeText,
+          title,
+          id,
+          viewCountText,
+          img,
+        });
+        return card.YoutubeCard();
       }
     </script>
   </body>
