@@ -219,7 +219,7 @@ img {
   box-shadow: 0px 3px 2px 0px rgba(0, 0, 0, 0.12);
 }
 
-.deezer-card__album-button {
+.dinamic-button {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -422,4 +422,62 @@ img {
 }
 .menu a:hover {
   background-color: var(--main-modal-color);
+}
+/* *****************  Youtube Mobile  **************** */
+.youtube-card {
+  padding: 0.5rem;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: "Roboto", "Arial", sans-serif;
+}
+.youtube-card__element {
+  display: flex;
+  flex-direction: column;
+}
+.youtube-card__preview {
+  position: relative;
+}
+.youtube-card_description__title > * {
+  overflow-x: hidden;
+  padding-right: 24px;
+  margin-top: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+.youtube-card_description__details {
+  max-width: 100%;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  font-size: 0.8rem;
+  color: #606060;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+
+  background: transparent;
+}
+.youtube-card_description__details > p {
+  flex-shrink: 1;
+  margin: 0.1rem;
+}
+
+.youtube-card__album--play {
+  background-color: transparent;
+  width: 50px;
+  height: 50px;
+  border: 0;
+  background-image: url(./play.svg);
+  background-size: cover;
+}
+.youtube-card__album--pause {
+  background-color: transparent;
+  width: 50px;
+  height: 50px;
+  border: 0;
+  background-image: url(./pause.svg);
+  background-size: cover;
 }
