@@ -32,62 +32,78 @@
 
       document.addEventListener("DOMContentLoaded", App);
 
-      const Play = function (target) {
+      const Play = function (target, duration) {
         let source = target.dataset.source;
         return new Promise(function (resolve, reject) {
           // return a promise
-          audio = new Audio(source); // create audio wo/ src
-          audio.preload = "auto"; // intend to play through
-          audio.autoplay = true; // autoplay when loaded
-          audio.onerror = reject; // on error, reject
-          audio.onended = resolve; // when done, resolve
-          audio.oncanplaythrough = () => {
+          if (duration) {
+            audio.play();
             document
               .querySelector(`[data-pause = "${source}"]`)
-              .classList.toggle("--hidden");
+              .classList.remove("--hidden");
             document
               .querySelector(`[data-playing = "${source}"]`)
-              .classList.toggle("--hidden");
-          };
+              .classList.remove("--hidden");
+            audio.onended = resolve; // when done, resolve
+          } else {
+            audio = new Audio(source); // create audio wo/ src}
+            audio.preload = "auto"; // intend to play through
+            audio.autoplay = true; // autoplay when loaded
+            audio.onerror = reject; // on error, reject
+            audio.onended = resolve; // when done, resolve
+            audio.oncanplaythrough = () => {
+              document
+                .querySelector(`[data-pause = "${source}"]`)
+                .classList.remove("--hidden");
+              document
+                .querySelector(`[data-playing = "${source}"]`)
+                .classList.remove("--hidden");
+            };
+          }
         }).then((res) => {
           document
             .querySelector(`[data-source = "${source}"]`)
-            .classList.toggle("--hidden");
+            .classList.remove("--hidden");
           document
             .querySelector(`[data-pause = "${source}"]`)
-            .classList.toggle("--hidden");
+            .classList.add("--hidden");
           document
             .querySelector(`[data-playing = "${source}"]`)
-            .classList.toggle("--hidden");
+            .classList.add("--hidden");
         });
       };
       const PlayAudio = function (target) {
-        target.classList.toggle("--hidden");
+        target.classList.add("--hidden");
         if (audio === null || (!audio.duration > 0 && !audio.paused)) {
           Play(target);
+        } else if (target.dataset.source === audio.src) {
+          document
+            .querySelector(`[data-pause = "${audio.src}"]`)
+            .classList.add("--hidden");
+          Play(target, audio.duration);
         } else {
           audio.pause();
           document
             .querySelector(`[data-source = "${audio.src}"]`)
-            .classList.toggle("--hidden");
+            .classList.remove("--hidden");
           document
             .querySelector(`[data-pause = "${audio.src}"]`)
-            .classList.toggle("--hidden");
+            .classList.add("--hidden");
           document
             .querySelector(`[data-playing = "${audio.src}"]`)
-            .classList.toggle("--hidden");
+            .classList.add("--hidden");
           Play(target);
         }
       };
       const PauseAudio = function (target) {
         audio.pause();
-        target.classList.toggle("--hidden");
+        target.classList.add("--hidden");
         target.parentNode
           .querySelector(".deezer-card__album--play")
-          .classList.toggle("--hidden");
+          .classList.remove("--hidden");
         target.parentElement.parentElement
           .querySelector(".deezer-card__album--playing")
-          .classList.toggle("--hidden");
+          .classList.add("--hidden");
       };
       const VideoPlay = function (source, target) {
         let { url } = source.streamingData.formats[2];
