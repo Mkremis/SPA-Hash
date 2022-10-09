@@ -218,8 +218,7 @@ img {
   display: flex;
   box-shadow: 0px 3px 2px 0px rgba(0, 0, 0, 0.12);
 }
-
-.dinamic-button {
+.deezer-card__album-button {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -429,6 +428,7 @@ img {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+
   font-family: "Roboto", "Arial", sans-serif;
 }
 .youtube-card__element {
@@ -464,6 +464,12 @@ img {
   flex-shrink: 1;
   margin: 0.1rem;
 }
+.dinamic-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
 .youtube-card__album--play {
   background-color: transparent;
@@ -471,13 +477,5 @@ img {
   height: 50px;
   border: 0;
   background-image: url(./play.svg);
-  background-size: cover;
-}
-.youtube-card__album--pause {
-  background-color: transparent;
-  width: 50px;
-  height: 50px;
-  border: 0;
-  background-image: url(./pause.svg);
   background-size: cover;
 }
