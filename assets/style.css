@@ -178,7 +178,7 @@ img {
 }
 /* Artist info */
 .deezer-card__artist {
-  flex-basis: 30%;
+  flex: 0 0 30%;
   background-color: rgb(236, 239, 241);
   display: flex;
   flex-direction: column;
@@ -186,9 +186,7 @@ img {
   border-radius: 0 10px;
   box-shadow: 0px 3px 2px 0px rgba(0, 0, 0, 0.12);
 }
-.deezer-card__artist-img {
-  flex: 0 0 50%;
-}
+
 .deezer-card__artist-img > figure {
   margin: 0;
 }
@@ -196,12 +194,14 @@ img {
   text-align: center;
 }
 .deezer-card__artist-description {
-  flex: 1 0 50%;
+  flex: 1 1 50%;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: space-evenly;
   margin-left: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .deezer-card__artist-description p {
   margin: 0;
@@ -441,8 +441,7 @@ img {
 .youtube-card_description__title > * {
   overflow-x: hidden;
   padding-right: 24px;
-  margin-top: 0.7rem;
-  margin-bottom: 0.5rem;
+  margin: 3px 0;
 }
 .youtube-card_description__details {
   max-width: 100%;
@@ -457,8 +456,6 @@ img {
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-
-  background: transparent;
 }
 .youtube-card_description__details > p {
   flex-shrink: 1;
