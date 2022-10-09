@@ -12,7 +12,6 @@
 
   <body>
     <div id="root"></div>
-
     <script>
       const NAME = "rollingstone",
         DOMAIN = `https://es.${NAME}.com`,
@@ -27,13 +26,14 @@
         VIDEO = `https://youtube-search-and-download.p.rapidapi.com/video?id=`,
         GENIUSAPI = `https://genius.p.rapidapi.com/search?q=`,
         DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`;
+
       let page = 1,
-        audio,
-        playing = false;
+        audio = null;
 
       document.addEventListener("DOMContentLoaded", App);
 
-      const Play = function (source, target) {
+      const Play = function (target) {
+        let source = target.dataset.source;
         return new Promise(function (resolve, reject) {
           // return a promise
           audio = new Audio(source); // create audio wo/ src
@@ -42,45 +42,55 @@
           audio.onerror = reject; // on error, reject
           audio.onended = resolve; // when done, resolve
           audio.oncanplaythrough = () => {
-            playing = source;
-            target.classList.toggle("--hidden");
-            target.parentNode
-              .querySelector(".deezer-card__album--pause")
+            document
+              .querySelector(`[data-pause = "${source}"]`)
               .classList.toggle("--hidden");
-            target.parentElement.parentElement
-              .querySelector(".deezer-card__album--playing")
+            document
+              .querySelector(`[data-playing = "${source}"]`)
               .classList.toggle("--hidden");
           };
         }).then((res) => {
-          target.classList.toggle("--hidden");
-          target.parentNode
-            .querySelector(".deezer-card__album--pause")
+          document
+            .querySelector(`[data-source = "${source}"]`)
             .classList.toggle("--hidden");
-          target.parentElement.parentElement
-            .querySelector(".deezer-card__album--playing")
+          document
+            .querySelector(`[data-pause = "${source}"]`)
+            .classList.toggle("--hidden");
+          document
+            .querySelector(`[data-playing = "${source}"]`)
             .classList.toggle("--hidden");
         });
       };
-      const PlayAudio = function (source, target) {
-        if (!playing) {
-          Play(source, target);
+      const PlayAudio = function (target) {
+        target.classList.toggle("--hidden");
+        if (audio === null || (!audio.duration > 0 && !audio.paused)) {
+          Play(target);
         } else {
           audio.pause();
           document
-            .querySelector(`[data-source = "${playing}"]`)
+            .querySelector(`[data-source = "${audio.src}"]`)
             .classList.toggle("--hidden");
           document
-            .querySelector(`[data-pause = "${playing}"]`)
+            .querySelector(`[data-pause = "${audio.src}"]`)
             .classList.toggle("--hidden");
           document
-            .querySelector(`[data-playing = "${playing}"]`)
+            .querySelector(`[data-playing = "${audio.src}"]`)
             .classList.toggle("--hidden");
-          Play(source, target);
+          Play(target);
         }
+      };
+      const PauseAudio = function (target) {
+        audio.pause();
+        target.classList.toggle("--hidden");
+        target.parentNode
+          .querySelector(".deezer-card__album--play")
+          .classList.toggle("--hidden");
+        target.parentElement.parentElement
+          .querySelector(".deezer-card__album--playing")
+          .classList.toggle("--hidden");
       };
       const VideoPlay = function (source, target) {
         let { url } = source.streamingData.formats[2];
-        console.log(source);
         const Player = new Promise(function (resolve, reject) {
           // return a promise
           $video = document.createElement("video");
@@ -93,6 +103,7 @@
           $video.onerror = reject; // on error, reject
           $video.onended = resolve; // when done, resolve
           $video.oncanplaythrough = () => {
+            document.querySelector(".loader").style.display = "none";
             document.getElementById("root").classList.toggle("--hidden");
             const $frame = document.createElement("div");
             $frame.classList.add("frame");
@@ -111,7 +122,7 @@
             );
             $stop.addEventListener("click", (e) => {
               $video.pause();
-              resolve($frame);
+              resolve(source.videoDetails.videoId);
             });
 
             const $styles = document.getElementById("dynamic-styles");
@@ -135,16 +146,21 @@
                left: 50%;
                transform: translate(-50%, -50%);
             }
-
               `;
           };
-        }).then(($frame) => {
-          $frame.remove();
+        }).then((source) => {
+          document.querySelector(".frame").remove();
           document.getElementById("root").classList.toggle("--hidden");
+          document
+            .querySelector(`[data-source_video = "${source}"]`)
+            .classList.toggle("--hidden");
         });
         return Player;
       };
       const VideoInfo = async function (target) {
+        target.classList.toggle("--hidden");
+        document.querySelector(".loader").style.display = "block";
+        console.log(target);
         const source = target.dataset.source_video;
         await ajax({
           url: `${VIDEO}${source}`,
@@ -152,7 +168,7 @@
             method: "GET",
             headers: {
               "X-RapidAPI-Key":
-                "0b048e90e6mshcd711004ccd8b43p1c3fbajsnd92706b2c07f",
+                "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
               "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
             },
           },
@@ -161,7 +177,7 @@
             if (search.length === 0) {
               $template = `
                        <p class="error">
-                           No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                           Error al cargar los datos
                         </p>
                         `;
             } else {
@@ -172,36 +188,18 @@
       };
 
       document.addEventListener("click", (e) => {
-        const { target } = e,
-          source = target.dataset.source || null;
-
-        if (target.matches(".deezer-card__album--play")) {
-          PlayAudio(source, target);
-        } else if (target.matches(".deezer-card__album--pause")) {
-          audio.pause();
-          target.classList.toggle("--hidden");
-          target.parentNode
-            .querySelector(".deezer-card__album--play")
-            .classList.toggle("--hidden");
-          target.parentElement.parentElement
-            .querySelector(".deezer-card__album--playing")
-            .classList.toggle("--hidden");
-        }
-
-        if (
-          e.target.matches(".panel-btn") ||
-          e.target.matches(".panel-btn *")
-        ) {
+        const { target } = e;
+        if (target.matches(".panel-btn") || target.matches(".panel-btn *")) {
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
         }
-        if (e.target.matches(".menu a")) {
+        if (target.matches(".menu a")) {
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
         }
 
         if (target.matches(".post-card a *")) {
-          localStorage.setItem("wpPostId", e.target.dataset.id);
+          localStorage.setItem("wpPostId", target.dataset.id);
           console.log(target.dataset);
         }
         return false;
@@ -444,22 +442,23 @@
               method: "GET",
               headers: {
                 "X-RapidAPI-Key":
-                  "0b048e90e6mshcd711004ccd8b43p1c3fbajsnd92706b2c07f",
+                  "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
                 "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
               },
             },
             cbSuccess: ({ contents }) => {
-              // console.log(contents);
+              console.log(contents);
               let $template = "";
               if (contents.length === 0) {
                 $template = `
                        <p class="error">
-                           No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                        Error recibiendo datos
                         </p>
                         `;
               } else {
                 contents.forEach((content) => ($template += Youtube(content)));
               }
+
               $main.innerHTML = $template;
             },
           });
@@ -520,26 +519,34 @@
         }
 
         DeezerCard() {
-          return `<article class="deezer-card">
-                 <section class="deezer-card__artist">
-                 <div class="deezer-card__artist-img">
-                 <figure><a href=${this.slug} target="_blank"><img src="${this.img}" alt="${this.artist}" /><figcaption>${this.artist}</a><figcaption></figure>
-                 </div>
-                 <div class="deezer-card__artist-description">
-                 <div><h4>Album:</h4><p>${this.title}</p></div>
-                 <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
-                 <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
-                 </div>
-                 </section>
-                 <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
-                 <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
-                 <div class="deezer-card__album-button --hidden">
-                  <button class="deezer-card__album--play" data-source = "${this.preview}"></button>
-                  <button class="deezer-card__album--pause --hidden" data-pause = "${this.preview}"></button>
-                  </div>
-                  <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
-                 </section>
-                 </article>`;
+          return ` 
+          <article class="deezer-card">
+            <section class="deezer-card__artist">
+              <div class="deezer-card__artist-img">
+                <figure>
+                  <a href="${this.slug}" target="_blank">
+                    <img src="${this.img}" alt="${this.artist}" />
+                    <figcaption>${this.artist}<figcaption>
+                      </a>
+                      </figure>
+                      </div>
+                      <div class="deezer-card__artist-description">
+                        <div><h4>Album:</h4><p>${this.title}</p></div>
+                        <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
+                        <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
+                        </div>
+                        </section>
+                        <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+                          <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
+                          <div class="deezer-card__album-button --hidden">
+                            <button class="deezer-card__album--play" data-source= "${this.preview}" onclick="PlayAudio(this)">
+                              </button>
+                            <button class="deezer-card__album--pause --hidden" data-pause="${this.preview}" onclick="PauseAudio(this)">
+                              </button>
+                              </div>
+                              <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
+                              </section>
+                              </article>`;
         }
         YoutubeCard() {
           return `<article class="youtube-card">
@@ -547,8 +554,7 @@
                    <div class="youtube-card__preview" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
                    <img class="youtube-card__preview-img" src="${this.img}" alt="${this.title}"/>
                    <div class="dinamic-button --hidden">
-                    <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick = "VideoInfo(this)"></button>
-                    <button class="youtube-card__album--pause --hidden" data-pauseVideo = "${this.id}"></button>
+                    <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick=" VideoInfo(this)"></button>
                     </div>
                    </div>
                     <div class="youtube-card_description">
@@ -874,7 +880,7 @@
                <a href="#/">Home</a>
                <a href="#/search" class="search-link">Posts</a>
                 <a href="#/music" class="search-link">Musica</a>
-                 <a href="#/youtube" class="search-link">Youtube</a>
+                <a href="#/youtube" class="search-link">Youtube</a>
                 <a href="#/artist"class="search-link">Deezer</a>
                <a href="#/Contacto">Contacto</a>
                </nav>`;
