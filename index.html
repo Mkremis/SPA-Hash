@@ -663,6 +663,7 @@
               display: block;
               animation: show-message 1s 1 normal 0s ease-out both;
              }
+             
 
              .none{
              display: none;
@@ -739,15 +740,6 @@
         $submit.type = "submit";
         $submit.value = "Enviar";
         $form.appendChild($submit);
-        /////////////////loader////////////////////////
-        let $div = document.createElement("div");
-        $div.classList.add("contact-form-loader", "none");
-
-        const loader = document.createElement("img");
-        loader.src = "/assets/loader.svg";
-        loader.alt = "cargando";
-        $div.appendChild(loader);
-        $form.appendChild($div);
         /////////////////confirm////////////////////////
         $div = document.createElement("div");
         $div.classList.add("contact-form-response", "none");
@@ -793,22 +785,21 @@
 
           document.addEventListener("submit", (e) => {
             e.preventDefault();
-            const $loader = document.querySelector(".contact-form-loader"),
-              $response = document.querySelector(".contact-form-response");
-            $loader.classList.remove("none");
+            document.querySelector(".loader").style.display = "block";
+            const $response = document.querySelector(".contact-form-response");
             fetch("https://formsubmit.co/ajax/martinkremis@gmail.com", {
               method: "POST",
               body: new FormData(e.target),
             })
               .then((res) => (res.ok ? res.json() : Promise.reject(res)))
               .then((jsn) => {
-                $loader.classList.add("none");
+                document.querySelector(".loader").style.display = "none";
                 $response.classList.remove("none");
                 $response.innerHTML = `<p>${jsn.message}</p>`;
                 $form.reset();
               })
               .catch((err) => {
-                $loader.classList.add("none");
+                document.querySelector(".loader").style.display = "none";
                 let message =
                   err.statusText ||
                   "Ocurrio un error al enviar el mensaje, vuelve a intentarlo";
