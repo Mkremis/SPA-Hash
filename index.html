@@ -39,6 +39,9 @@
           if (duration) {
             audio.play();
             document
+              .querySelector(`[data-loader = "${audio.src}"]`)
+              .classList.add("--hidden");
+            document
               .querySelector(`[data-pause = "${source}"]`)
               .classList.remove("--hidden");
             document
@@ -52,6 +55,9 @@
             audio.onerror = reject; // on error, reject
             audio.onended = resolve; // when done, resolve
             audio.oncanplaythrough = () => {
+              document
+                .querySelector(`[data-loader = "${audio.src}"]`)
+                .classList.add("--hidden");
               document
                 .querySelector(`[data-pause = "${source}"]`)
                 .classList.remove("--hidden");
@@ -74,6 +80,9 @@
       };
       const PlayAudio = function (target) {
         target.classList.add("--hidden");
+        document
+          .querySelector(`[data-loader = "${target.dataset.source}"]`)
+          .classList.remove("--hidden");
         if (audio === null || (!audio.duration > 0 && !audio.paused)) {
           Play(target);
         } else if (target.dataset.source === audio.src) {
@@ -106,7 +115,8 @@
           .classList.add("--hidden");
       };
       const VideoPlay = function (source, target) {
-        let { url } = source.streamingData.formats[2];
+        let { url } = source.streamingData.formats[2],
+          { videoId } = source.videoDetails;
         const Player = new Promise(function (resolve, reject) {
           // return a promise
           $video = document.createElement("video");
@@ -119,7 +129,9 @@
           $video.onerror = reject; // on error, reject
           $video.onended = resolve; // when done, resolve
           $video.oncanplaythrough = () => {
-            document.querySelector(".loader").style.display = "none";
+            document
+              .querySelector(`[data-loader = "${videoId}"]`)
+              .classList.add("--hidden");
             document.getElementById("root").classList.toggle("--hidden");
             const $frame = document.createElement("div");
             $frame.classList.add("frame");
@@ -174,10 +186,11 @@
         return Player;
       };
       const VideoInfo = async function (target) {
-        target.classList.toggle("--hidden");
-        document.querySelector(".loader").style.display = "block";
-        console.log(target);
         const source = target.dataset.source_video;
+        target.classList.toggle("--hidden");
+        document
+          .querySelector(`[data-loader = "${source}"]`)
+          .classList.remove("--hidden");
         await ajax({
           url: `${VIDEO}${source}`,
           prop: {
@@ -559,6 +572,7 @@
                               </button>
                             <button class="deezer-card__album--pause --hidden" data-pause="${this.preview}" onclick="PauseAudio(this)">
                               </button>
+                                <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.preview}"/>
                               </div>
                               <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
                               </section>
@@ -571,6 +585,7 @@
                    <img class="youtube-card__preview-img" src="${this.img}" alt="${this.title}"/>
                    <div class="dinamic-button --hidden">
                     <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick=" VideoInfo(this)"></button>
+                     <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.id}"/>
                     </div>
                    </div>
                     <div class="youtube-card_description">
