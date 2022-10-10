@@ -176,15 +176,25 @@
             }
               `;
           };
-        }).then((source) => {
+        });
+        Player.then((source) => {
+          console.log("resolve");
           document.querySelector(".frame").remove();
           document.getElementById("root").classList.toggle("--hidden");
           document
             .querySelector(`[data-source_video = "${source}"]`)
             .classList.toggle("--hidden");
+        }).catch((err) => {
+          document
+            .querySelector(`[data-loader = "${videoId}"]`)
+            .classList.add("--hidden");
+          document
+            .querySelector(`[data-source_video = "${videoId}"]`)
+            .classList.toggle("--hidden");
         });
         return Player;
       };
+
       const VideoInfo = async function (target) {
         const source = target.dataset.source_video;
         target.classList.toggle("--hidden");
@@ -201,18 +211,7 @@
               "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
             },
           },
-          cbSuccess: (search) => {
-            let $template = "";
-            if (search.length === 0) {
-              $template = `
-                       <p class="error">
-                           Error al cargar los datos
-                        </p>
-                        `;
-            } else {
-              VideoPlay(search, target);
-            }
-          },
+          cbSuccess: (search) => VideoPlay(search, target),
         });
       };
 
@@ -261,11 +260,16 @@
           .catch((err) => {
             console.log(err);
             let message = err.statusText || "ocurrio un error";
-            document.getElementById("main").innerHTML = `
-                   <div class ="error">
-                   <p>error ${err.status} : ${message}</p>
-                   </div>`;
+            document
+              .getElementById("root")
+              .insertAdjacentHTML(
+                "afterbegin",
+                `<div class ="error"><p>error ${err.status} : ${message}</p></div>`
+              );
             document.querySelector(".loader").style.display = "none";
+            setTimeout(() => {
+              document.querySelector(".error").style.display = "none";
+            }, 2500);
           });
       }
       // INFINITE SCROLL:
@@ -548,7 +552,7 @@
         }
 
         DeezerCard() {
-          return ` 
+          return `
           <article class="deezer-card">
             <section class="deezer-card__artist">
               <div class="deezer-card__artist-img">
@@ -663,7 +667,7 @@
               display: block;
               animation: show-message 1s 1 normal 0s ease-out both;
              }
-             
+
 
              .none{
              display: none;
