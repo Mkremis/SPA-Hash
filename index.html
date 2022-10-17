@@ -25,7 +25,8 @@
           "https://youtube-search-and-download.p.rapidapi.com/trending?type=mu&hl=en&gl=US",
         VIDEO = `https://youtube-search-and-download.p.rapidapi.com/video?id=`,
         GENIUSAPI = `https://genius.p.rapidapi.com/search?q=`,
-        DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`;
+        DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`,
+        CHART = `https://shazam-core.p.rapidapi.com/v1/charts/world`;
 
       let page = 1,
         audio = null;
@@ -437,36 +438,45 @@
             },
           });
         } else if (hash.includes("#/artist")) {
-          let query = localStorage.getItem("artistSearch");
-          if (!query) {
-            document.querySelector(".loader").style.display = "none";
-            return false;
+          let query = [],
+            $template = "";
+          if (localStorage.getItem("artistSearch")) {
+            query.push(localStorage.getItem("artistSearch"));
+          } else {
+            query = await Charts();
           }
-          await ajax({
-            url: `${DEEZER}${query}`,
-            prop: {
-              method: "GET",
-              headers: {
-                "X-RapidAPI-Key":
-                  "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
-                "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
-              },
-            },
-            cbSuccess: (response) => {
-              // console.log(response);
-              let $template = "";
-              if (response.length === 0) {
-                $template = `<p class="error">No se encontraron resultados con la busqueda: <mark>${query}</mark></p> `;
-              } else {
-                $main.classList.replace("grid-fluid", "flex-row");
+          document.querySelector(".loader").style.display = "none";
 
-                let { data } = response;
-                data.forEach((element) => {
-                  $template += Deezer(element);
-                });
-              }
-              $main.innerHTML = $template;
-            },
+          query.forEach(async (element) => {
+            console.log(element);
+            await ajax({
+              url: `${DEEZER}${element}`,
+              prop: {
+                method: "GET",
+                headers: {
+                  "X-RapidAPI-Key":
+                    "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
+                  "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
+                },
+              },
+              cbSuccess: (response) => {
+                if (response.length === 0) {
+                  $template = `<p class="error">No se encontraron resultados con la busqueda: <mark>${query}</mark></p> `;
+                } else {
+                  $main.classList.replace("grid-fluid", "flex-row");
+                  let { data } = response;
+
+                  if (query.length > 1) {
+                    $template += Deezer(data[0]);
+                  } else {
+                    data.forEach((element, index) => {
+                      $template += Deezer(element);
+                    });
+                  }
+                }
+                $main.innerHTML = $template;
+              },
+            });
           });
         } else if (hash === "#/youtube") {
           await ajax({
@@ -508,6 +518,28 @@
         }
 
         document.querySelector(".loader").style.display = "none";
+      }
+      async function Charts() {
+        let top10Data;
+        await ajax({
+          url: CHART,
+          prop: {
+            method: "GET",
+            headers: {
+              "X-RapidAPI-Key":
+                "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
+              "X-RapidAPI-Host": "shazam-core.p.rapidapi.com",
+            },
+          },
+          cbSuccess: (tops) => {
+            let top10 = tops.filter((_, index) => index < 10);
+
+            top10Data = top10.map(
+              (top, index) => `${top.subtitle} ${top.title}`
+            );
+          },
+        });
+        return top10Data;
       }
       // COMPONENTS:
       class Components {
