@@ -32,7 +32,6 @@
         audio = null;
 
       document.addEventListener("DOMContentLoaded", App);
-
       document.addEventListener("click", (e) => {
         const { target } = e;
         if (target.matches(".panel-btn") || target.matches(".panel-btn *")) {
@@ -48,12 +47,10 @@
         }
         return false;
       });
-
       window.addEventListener("hashchange", () => {
         page = 1;
         App();
       });
-
       // APP:
       function App() {
         const $root = document.getElementById("root");
@@ -353,7 +350,6 @@
 
         document.querySelector(".loader").style.display = "none";
       }
-
       // COMPONENTS:
       class Components {
         constructor(options) {
@@ -361,7 +357,7 @@
           this.title = options.title;
           this.date = options.dateFormat;
           this.id = options.id;
-          this.author = options.author || null;
+          this.author = options.author || options.artist;
           this.artist = options.artist || null;
           this.album_cover = options.album_cover || null;
           this.preview = options.preview || null;
@@ -370,7 +366,6 @@
           this.duration = options.duration || null;
           this.channelName = options.channelName || null;
           this.viewCountText = options.viewCountText || null;
-          this.slug = options.slug;
           this.url = options.url;
           this.link = options.slug || options.url;
           this.target = this.setTarget(this.url);
@@ -382,7 +377,6 @@
             return "";
           }
         }
-
         CardMaker() {
           return `
           <article class="post-card" data-id="${this.id}">
@@ -403,7 +397,6 @@
           </article>
             `;
         }
-
         DeezerCard() {
           return `
           <article class="deezer-card">
@@ -413,49 +406,50 @@
                   <a href="${this.slug}" target="_blank">
                     <img src="${this.img}" alt="${this.artist}" />
                     <figcaption>${this.artist}<figcaption>
-                      </a>
-                      </figure>
-                      </div>
-                      <div class="deezer-card__artist-description">
-                        <div><h4>Album:</h4><p>${this.title}</p></div>
-                        <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
-                        <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
-                        </div>
-                        </section>
-                        <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
-                          <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
-                          <div class="deezer-card__album-button --hidden">
-                            <button class="deezer-card__album--play" data-source= "${this.preview}" onclick="PlayAudio(this)">
-                              </button>
-                            <button class="deezer-card__album--pause --hidden" data-pause="${this.preview}" onclick="PauseAudio(this)">
-                              </button>
-                                <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.preview}"/>
-                              </div>
-                              <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
-                              </section>
-                              </article>`;
+                  </a>
+                </figure>
+              </div>
+              <div class="deezer-card__artist-description">
+              <div><h4>Album:</h4><p>${this.title}</p></div>
+              <div><h4>Track:</h4><a href=${this.track_link} target="_blank"><p>${this.song}</p></a></div>
+              <div><h4>Duracion:</h4><p>${this.duration}s</p></div>
+              </div>
+            </section>
+            <section class="deezer-card__album" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+              <img class="deezer-card__album-cover" src="${this.album_cover}" alt="${this.title}"/>
+              <div class="deezer-card__album-button --hidden">
+                <button class="deezer-card__album--play" data-source= "${this.preview}" onclick="PlayAudio(this)">
+                </button>
+                <button class="deezer-card__album--pause --hidden" data-pause="${this.preview}" onclick="PauseAudio(this)">
+                </button>
+                <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.preview}"/>
+              </div>
+                <img class="deezer-card__album--playing --hidden" src="./assets/audio-wave.gif" alt="Playing Music" data-playing="${this.preview}"/>
+            </section>
+          </article>`;
         }
         YoutubeCard() {
-          return `<article class="youtube-card">
-                   <section class ="youtube-card__element">
-                   <div class="youtube-card__preview" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
-                   <img class="youtube-card__preview-img" src="${this.img}" alt="${this.title}"/>
-                   <div class="dinamic-button --hidden">
-                    <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick=" VideoInfo(this)"></button>
-                     <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.id}"/>
+          return `
+          <article class="youtube-card">
+            <section class ="youtube-card__element">
+              <div class="youtube-card__preview" onmouseenter="ShowButton(this)" onmouseleave="ShowButton(this)">
+                <img class="youtube-card__preview-img" src="${this.img}" alt="${this.title}"/>
+                <div class="dinamic-button --hidden">
+                  <button class="youtube-card__album--play" data-source_video = "${this.id}" onclick=" VideoInfo(this)"></button>
+                  <img class="loader-mini --hidden" src="./assets/loader-mini.svg" alt="loader" data-loader="${this.id}"/>
+              </div>
+                </div>
+                <div class="youtube-card_description">
+                  <div class="youtube-card_description__title">
+                    <h4>${this.title}</h4>
+                </div>
+                  <div class="youtube-card_description__details">
+                    <p>${this.channelName}</p>
+                    <p>${this.viewCountText}<span> - <span>${this.duration}</p>
+                  </div>
                     </div>
-                   </div>
-                    <div class="youtube-card_description">
-                       <div class="youtube-card_description__title">
-                   <h4>${this.title}</h4>
-                   </div>
-                    <div class="youtube-card_description__details">
-                   <p>${this.channelName}</p>
-                   <p>${this.viewCountText}<span> - <span>${this.duration}</p>
-                   </div>
-                   </div>
-                   </section>
-                   </article>`;
+            </section>
+          </article>`;
         }
       }
       function ContactForm() {
@@ -860,7 +854,7 @@
         return $form;
       }
       function SearchMusic(props) {
-        // console.log(props);
+        console.log(props);
         let {
             id,
             full_title,
@@ -872,8 +866,7 @@
           artist = primary_artist.name,
           title = full_title,
           dateFormat = release_date_for_display,
-          img = header_image_thumbnail_url || "./assets/favicon.svg",
-          author = "GENIUS";
+          img = header_image_thumbnail_url || "./assets/favicon.svg";
 
         let card = new Components({
           img,
@@ -882,7 +875,6 @@
           url,
           id,
           artist,
-          author,
         });
         return card.CardMaker();
       }
@@ -928,9 +920,49 @@
         });
         return card.YoutubeCard();
       }
+      function Frame() {
+        document.getElementById("root").classList.toggle("--hidden");
+        const $frame = document.createElement("div");
+        $frame.classList.add("frame");
+        document.querySelector("body").appendChild($frame);
+        $frame.appendChild($video);
+        const $stop = document.createElement("img");
+        $stop.src = "./assets/close.svg";
+        $stop.classList.add("close", "--hidden");
+        $frame.appendChild($stop);
+        $frame.addEventListener("mouseenter", () =>
+          $stop.classList.toggle("--hidden")
+        );
+        $frame.addEventListener("mouseleave", () =>
+          $stop.classList.toggle("--hidden")
+        );
 
+        const $styles = document.getElementById("dynamic-styles");
+        $styles.innerHTML += `
+            .frame{
+              position: relative;
+              width: 100vw;
+              height: 100vh;
+              background-color: #000;
+            }
+            video{
+              z-index:998;
+              min-width: 100%;
+              min-height: 100%;
+            }
+            .close{
+               width: 50px;
+               height: 50px;
+               border: 0;
+               position: absolute;
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+            }
+              `;
+      }
       // MEDIA
-      const Play = function (target, duration) {
+      function Play(target, duration) {
         let source = target.dataset.source;
         return new Promise(function (resolve, reject) {
           // return a promise
@@ -975,8 +1007,8 @@
             .querySelector(`[data-playing = "${source}"]`)
             .classList.add("--hidden");
         });
-      };
-      const PlayAudio = function (target) {
+      }
+      function PlayAudio(target) {
         target.classList.add("--hidden");
         document
           .querySelector(`[data-loader = "${target.dataset.source}"]`)
@@ -1001,8 +1033,8 @@
             .classList.add("--hidden");
           Play(target);
         }
-      };
-      const PauseAudio = function (target) {
+      }
+      function PauseAudio(target) {
         audio.pause();
         target.classList.add("--hidden");
         target.parentNode
@@ -1011,8 +1043,8 @@
         target.parentElement.parentElement
           .querySelector(".deezer-card__album--playing")
           .classList.add("--hidden");
-      };
-      const VideoPlay = function (source, target) {
+      }
+      function VideoPlay(source, target) {
         let { url } = source.streamingData.formats[2],
           { videoId } = source.videoDetails;
         const Player = new Promise(function (resolve, reject) {
@@ -1030,53 +1062,14 @@
             document
               .querySelector(`[data-loader = "${videoId}"]`)
               .classList.add("--hidden");
-            document.getElementById("root").classList.toggle("--hidden");
-            const $frame = document.createElement("div");
-            $frame.classList.add("frame");
-            document.querySelector("body").appendChild($frame);
-            $frame.appendChild($video);
-            const $stop = document.createElement("img");
-            $stop.src = "./assets/close.svg";
-            $stop.classList.add("close", "--hidden");
-            $frame.appendChild($stop);
-
-            $frame.addEventListener("mouseenter", () =>
-              $stop.classList.toggle("--hidden")
-            );
-            $frame.addEventListener("mouseleave", () =>
-              $stop.classList.toggle("--hidden")
-            );
-            $stop.addEventListener("click", (e) => {
+            Frame();
+            document.querySelector(".close").addEventListener("click", (e) => {
               $video.pause();
               resolve(source.videoDetails.videoId);
             });
-
-            const $styles = document.getElementById("dynamic-styles");
-            $styles.innerHTML += `
-            .frame{
-              position: relative;
-              width: 100vw;
-              height: 100vh;
-              background-color: #000;
-            }
-            video{
-              min-width: 100%;
-              min-height: 100%;
-            }
-            .close{
-               width: 50px;
-               height: 50px;
-               border: 0;
-               position: absolute;
-               top: 50%;
-               left: 50%;
-               transform: translate(-50%, -50%);
-            }
-              `;
           };
         });
         Player.then((source) => {
-          console.log("resolve");
           document.querySelector(".frame").remove();
           document.getElementById("root").classList.toggle("--hidden");
           document
@@ -1091,8 +1084,8 @@
             .classList.toggle("--hidden");
         });
         return Player;
-      };
-      const VideoInfo = async function (target) {
+      }
+      async function VideoInfo(target) {
         const source = target.dataset.source_video;
         target.classList.toggle("--hidden");
         document
@@ -1110,7 +1103,7 @@
           },
           cbSuccess: (search) => VideoPlay(search, target),
         });
-      };
+      }
     </script>
   </body>
 </html>
