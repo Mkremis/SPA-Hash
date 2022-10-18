@@ -33,189 +33,6 @@
 
       document.addEventListener("DOMContentLoaded", App);
 
-      const Play = function (target, duration) {
-        let source = target.dataset.source;
-        return new Promise(function (resolve, reject) {
-          // return a promise
-          if (duration) {
-            audio.play();
-            document
-              .querySelector(`[data-loader = "${audio.src}"]`)
-              .classList.add("--hidden");
-            document
-              .querySelector(`[data-pause = "${source}"]`)
-              .classList.remove("--hidden");
-            document
-              .querySelector(`[data-playing = "${source}"]`)
-              .classList.remove("--hidden");
-            audio.onended = resolve; // when done, resolve
-          } else {
-            audio = new Audio(source); // create audio wo/ src}
-            audio.preload = "auto"; // intend to play through
-            audio.autoplay = true; // autoplay when loaded
-            audio.onerror = reject; // on error, reject
-            audio.onended = resolve; // when done, resolve
-            audio.oncanplaythrough = () => {
-              document
-                .querySelector(`[data-loader = "${audio.src}"]`)
-                .classList.add("--hidden");
-              document
-                .querySelector(`[data-pause = "${source}"]`)
-                .classList.remove("--hidden");
-              document
-                .querySelector(`[data-playing = "${source}"]`)
-                .classList.remove("--hidden");
-            };
-          }
-        }).then((res) => {
-          document
-            .querySelector(`[data-source = "${source}"]`)
-            .classList.remove("--hidden");
-          document
-            .querySelector(`[data-pause = "${source}"]`)
-            .classList.add("--hidden");
-          document
-            .querySelector(`[data-playing = "${source}"]`)
-            .classList.add("--hidden");
-        });
-      };
-      const PlayAudio = function (target) {
-        target.classList.add("--hidden");
-        document
-          .querySelector(`[data-loader = "${target.dataset.source}"]`)
-          .classList.remove("--hidden");
-        if (audio === null || (!audio.duration > 0 && !audio.paused)) {
-          Play(target);
-        } else if (target.dataset.source === audio.src) {
-          document
-            .querySelector(`[data-pause = "${audio.src}"]`)
-            .classList.add("--hidden");
-          Play(target, audio.duration);
-        } else {
-          audio.pause();
-          document
-            .querySelector(`[data-source = "${audio.src}"]`)
-            .classList.remove("--hidden");
-          document
-            .querySelector(`[data-pause = "${audio.src}"]`)
-            .classList.add("--hidden");
-          document
-            .querySelector(`[data-playing = "${audio.src}"]`)
-            .classList.add("--hidden");
-          Play(target);
-        }
-      };
-      const PauseAudio = function (target) {
-        audio.pause();
-        target.classList.add("--hidden");
-        target.parentNode
-          .querySelector(".deezer-card__album--play")
-          .classList.remove("--hidden");
-        target.parentElement.parentElement
-          .querySelector(".deezer-card__album--playing")
-          .classList.add("--hidden");
-      };
-      const VideoPlay = function (source, target) {
-        let { url } = source.streamingData.formats[2],
-          { videoId } = source.videoDetails;
-        const Player = new Promise(function (resolve, reject) {
-          // return a promise
-          $video = document.createElement("video");
-          $video.setAttribute("src", url);
-          $video.muted = false;
-          $video.height = 240; // 👈️ in px
-          $video.width = 320; // 👈️ in px
-          $video.preload = "auto"; // intend to play through
-          $video.autoplay = true; // autoplay when loaded
-          $video.onerror = reject; // on error, reject
-          $video.onended = resolve; // when done, resolve
-          $video.oncanplaythrough = () => {
-            document
-              .querySelector(`[data-loader = "${videoId}"]`)
-              .classList.add("--hidden");
-            document.getElementById("root").classList.toggle("--hidden");
-            const $frame = document.createElement("div");
-            $frame.classList.add("frame");
-            document.querySelector("body").appendChild($frame);
-            $frame.appendChild($video);
-            const $stop = document.createElement("img");
-            $stop.src = "./assets/close.svg";
-            $stop.classList.add("close", "--hidden");
-            $frame.appendChild($stop);
-
-            $frame.addEventListener("mouseenter", () =>
-              $stop.classList.toggle("--hidden")
-            );
-            $frame.addEventListener("mouseleave", () =>
-              $stop.classList.toggle("--hidden")
-            );
-            $stop.addEventListener("click", (e) => {
-              $video.pause();
-              resolve(source.videoDetails.videoId);
-            });
-
-            const $styles = document.getElementById("dynamic-styles");
-            $styles.innerHTML += `
-            .frame{
-              position: relative;
-              width: 100vw;
-              height: 100vh;
-              background-color: #000;
-            }
-            video{
-              min-width: 100%;
-              min-height: 100%;
-            }
-            .close{
-               width: 50px;
-               height: 50px;
-               border: 0;
-               position: absolute;
-               top: 50%;
-               left: 50%;
-               transform: translate(-50%, -50%);
-            }
-              `;
-          };
-        });
-        Player.then((source) => {
-          console.log("resolve");
-          document.querySelector(".frame").remove();
-          document.getElementById("root").classList.toggle("--hidden");
-          document
-            .querySelector(`[data-source_video = "${source}"]`)
-            .classList.toggle("--hidden");
-        }).catch((err) => {
-          document
-            .querySelector(`[data-loader = "${videoId}"]`)
-            .classList.add("--hidden");
-          document
-            .querySelector(`[data-source_video = "${videoId}"]`)
-            .classList.toggle("--hidden");
-        });
-        return Player;
-      };
-
-      const VideoInfo = async function (target) {
-        const source = target.dataset.source_video;
-        target.classList.toggle("--hidden");
-        document
-          .querySelector(`[data-loader = "${source}"]`)
-          .classList.remove("--hidden");
-        await ajax({
-          url: `${VIDEO}${source}`,
-          prop: {
-            method: "GET",
-            headers: {
-              "X-RapidAPI-Key":
-                "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
-              "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
-            },
-          },
-          cbSuccess: (search) => VideoPlay(search, target),
-        });
-      };
-
       document.addEventListener("click", (e) => {
         const { target } = e;
         if (target.matches(".panel-btn") || target.matches(".panel-btn *")) {
@@ -226,10 +43,8 @@
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
         }
-
         if (target.matches(".post-card a *")) {
           localStorage.setItem("wpPostId", target.dataset.id);
-          console.log(target.dataset);
         }
         return false;
       });
@@ -272,6 +87,26 @@
               document.querySelector(".error").style.display = "none";
             }, 2500);
           });
+      }
+      async function Charts() {
+        let top10;
+        await ajax({
+          url: CHART,
+          prop: {
+            method: "GET",
+            headers: {
+              "X-RapidAPI-Key":
+                "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
+              "X-RapidAPI-Host": "shazam-core.p.rapidapi.com",
+            },
+          },
+          cbSuccess: (tops) => {
+            top10 = tops
+              .filter((_, index) => index < 10)
+              .map((top) => `${top.subtitle} ${top.title}`);
+          },
+        });
+        return top10;
       }
       // INFINITE SCROLL:
       async function InfiniteScroll() {
@@ -353,7 +188,6 @@
           await ajax({
             url: POSTS,
             cbSuccess: (posts) => {
-              console.log(posts);
               let $template = "";
               posts.forEach((post) => ($template += PostCards(post)));
 
@@ -519,35 +353,13 @@
 
         document.querySelector(".loader").style.display = "none";
       }
-      async function Charts() {
-        let top10Data;
-        await ajax({
-          url: CHART,
-          prop: {
-            method: "GET",
-            headers: {
-              "X-RapidAPI-Key":
-                "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
-              "X-RapidAPI-Host": "shazam-core.p.rapidapi.com",
-            },
-          },
-          cbSuccess: (tops) => {
-            let top10 = tops.filter((_, index) => index < 10);
 
-            top10Data = top10.map(
-              (top, index) => `${top.subtitle} ${top.title}`
-            );
-          },
-        });
-        return top10Data;
-      }
       // COMPONENTS:
       class Components {
         constructor(options) {
           this.img = options.img;
           this.title = options.title;
           this.date = options.dateFormat;
-          this.slug = options.slug;
           this.id = options.id;
           this.author = options.author || null;
           this.artist = options.artist || null;
@@ -558,29 +370,38 @@
           this.duration = options.duration || null;
           this.channelName = options.channelName || null;
           this.viewCountText = options.viewCountText || null;
+          this.slug = options.slug;
+          this.url = options.url;
+          this.link = options.slug || options.url;
+          this.target = this.setTarget(this.url);
         }
+        setTarget(url) {
+          if (this.url) {
+            return `target="_blank"`;
+          } else {
+            return "";
+          }
+        }
+
         CardMaker() {
           return `
-            <article class="post-card" data-id = "${this.id}">
-        <div class="post-card__header">
-          <a href="#/${this.slug}" data-id="${this.id}">
+          <article class="post-card" data-id="${this.id}">
+          <div class="post-card__header">
+          <a href="${this.link}" data-id="${this.id}" ${this.target}>
           <img src="${this.img}" alt="${this.title}" data-id="${this.id}"/>
-            </a>
-             <a href="#/${this.slug}" data-id="${this.id}">
-            <p data-id="${this.id}">${this.title}</p>
           </a>
-        </div>
-        <div class="post-card__description">
-          <p><time datetime="${this.date}">${this.date}</time></p>
-          <p class="post-card__description-author">
-            ${this.author.toLowerCase()}
-          </p>
-        </div>
-      </article>
+              <a href="${this.link}" data-id="${this.id}" ${this.target}>
+                <p data-id="${this.id}">${this.title}</p>
+              </a>
+            </div>
+            <div class="post-card__description">
+              <p><time datetime="${this.date}">${this.date}</time></p>
+              <p class="post-card__description-author">
+          ${this.author.toLowerCase()}
+              </p>
+            </div>
+          </article>
             `;
-        }
-        HitCard() {
-          return `<article class="post-card"><a href=${this.slug} target ="_blank"><figure><img src="${this.img}" alt ="${this.title}"><figcaption>${this.title}</figcaption></a><p><time datetime="${this.date}">${this.date}</time></p></article>`;
         }
 
         DeezerCard() {
@@ -918,9 +739,7 @@
         $menu.innerHTML = `
                <a href="#/">Home</a>
                <span>-</span>
-               <a href="#/search" class="search-link">Posts</a>
-               <span>-</span>
-                <a href="#/music" class="search-link">Musica</a>
+               <a href="#/music" class="search-link">Genius</a>
                <span>-</span>
                <a href="#/youtube" class="search-link">Youtube</a>
                <span>-</span>
@@ -936,8 +755,7 @@
         $menuModal.innerHTML = `
                <nav class = "menu">
                <a href="#/">Home</a>
-               <a href="#/search" class="search-link">Posts</a>
-                <a href="#/music" class="search-link">Musica</a>
+                <a href="#/music" class="search-link">Genius</a>
                 <a href="#/youtube" class="search-link">Youtube</a>
                 <a href="#/artist"class="search-link">Deezer</a>
                <a href="#/Contacto">Contacto</a>
@@ -973,6 +791,7 @@
             ? _embedded["wp:featuredmedia"][0].source_url
             : "./assets/favicon.svg";
         title = title.rendered;
+        slug = `#/${slug}`;
 
         let card = new Components({ img, title, dateFormat, slug, id, author });
         return card.CardMaker();
@@ -997,23 +816,23 @@
         $input.type = "search";
         $input.name = "search";
         $input.autocomplete = "off";
-        $input.style.display = "none";
         $form.classList.add("search-form");
+        $form.style.display = "none";
         $form.appendChild($input);
 
-        if (location.hash.includes("#/search")) {
-          $input.style.display = "block";
-          $input.placeholder = "Buscar posts..";
+        if (location.hash.includes("#/search") || location.hash === "#/") {
+          $form.style.display = "block";
+          $input.placeholder = "search posts..";
           $input.value = localStorage.getItem("wpSearch");
         }
         if (location.hash.includes("#/music")) {
-          $input.style.display = "block";
-          $input.placeholder = "Buscar artista..";
+          $form.style.display = "block";
+          $input.placeholder = "search music info...";
           $input.value = localStorage.getItem("musicSearch");
         }
         if (location.hash.includes("#/artist")) {
-          $input.style.display = "block";
-          $input.placeholder = "Escuchar musica..";
+          $form.style.display = "block";
+          $input.placeholder = "listen music...";
           $input.value = localStorage.getItem("artistSearch");
         }
         document.addEventListener("search", (e) => {
@@ -1024,7 +843,7 @@
         document.addEventListener("submit", (e) => {
           if (!e.target.matches(".search-form")) return false;
           e.preventDefault();
-          if (location.hash.includes("#/search")) {
+          if (location.hash.includes("#/search") || location.hash === "#/") {
             localStorage.setItem("wpSearch", e.target.search.value);
             location.hash = `#/search?search=${e.target.search.value}`;
           }
@@ -1054,10 +873,18 @@
           title = full_title,
           dateFormat = release_date_for_display,
           img = header_image_thumbnail_url || "./assets/favicon.svg",
-          slug = url;
+          author = "GENIUS";
 
-        let card = new Components({ id, title, img, artist, dateFormat, slug });
-        return card.HitCard();
+        let card = new Components({
+          img,
+          title,
+          dateFormat,
+          url,
+          id,
+          artist,
+          author,
+        });
+        return card.CardMaker();
       }
       function Title(logo) {
         const $div = document.createElement("div");
@@ -1101,6 +928,189 @@
         });
         return card.YoutubeCard();
       }
+
+      // MEDIA
+      const Play = function (target, duration) {
+        let source = target.dataset.source;
+        return new Promise(function (resolve, reject) {
+          // return a promise
+          if (duration) {
+            audio.play();
+            document
+              .querySelector(`[data-loader = "${audio.src}"]`)
+              .classList.add("--hidden");
+            document
+              .querySelector(`[data-pause = "${source}"]`)
+              .classList.remove("--hidden");
+            document
+              .querySelector(`[data-playing = "${source}"]`)
+              .classList.remove("--hidden");
+            audio.onended = resolve; // when done, resolve
+          } else {
+            audio = new Audio(source); // create audio wo/ src}
+            audio.preload = "auto"; // intend to play through
+            audio.autoplay = true; // autoplay when loaded
+            audio.onerror = reject; // on error, reject
+            audio.onended = resolve; // when done, resolve
+            audio.oncanplaythrough = () => {
+              document
+                .querySelector(`[data-loader = "${audio.src}"]`)
+                .classList.add("--hidden");
+              document
+                .querySelector(`[data-pause = "${source}"]`)
+                .classList.remove("--hidden");
+              document
+                .querySelector(`[data-playing = "${source}"]`)
+                .classList.remove("--hidden");
+            };
+          }
+        }).then((res) => {
+          document
+            .querySelector(`[data-source = "${source}"]`)
+            .classList.remove("--hidden");
+          document
+            .querySelector(`[data-pause = "${source}"]`)
+            .classList.add("--hidden");
+          document
+            .querySelector(`[data-playing = "${source}"]`)
+            .classList.add("--hidden");
+        });
+      };
+      const PlayAudio = function (target) {
+        target.classList.add("--hidden");
+        document
+          .querySelector(`[data-loader = "${target.dataset.source}"]`)
+          .classList.remove("--hidden");
+        if (audio === null || (!audio.duration > 0 && !audio.paused)) {
+          Play(target);
+        } else if (target.dataset.source === audio.src) {
+          document
+            .querySelector(`[data-pause = "${audio.src}"]`)
+            .classList.add("--hidden");
+          Play(target, audio.duration);
+        } else {
+          audio.pause();
+          document
+            .querySelector(`[data-source = "${audio.src}"]`)
+            .classList.remove("--hidden");
+          document
+            .querySelector(`[data-pause = "${audio.src}"]`)
+            .classList.add("--hidden");
+          document
+            .querySelector(`[data-playing = "${audio.src}"]`)
+            .classList.add("--hidden");
+          Play(target);
+        }
+      };
+      const PauseAudio = function (target) {
+        audio.pause();
+        target.classList.add("--hidden");
+        target.parentNode
+          .querySelector(".deezer-card__album--play")
+          .classList.remove("--hidden");
+        target.parentElement.parentElement
+          .querySelector(".deezer-card__album--playing")
+          .classList.add("--hidden");
+      };
+      const VideoPlay = function (source, target) {
+        let { url } = source.streamingData.formats[2],
+          { videoId } = source.videoDetails;
+        const Player = new Promise(function (resolve, reject) {
+          // return a promise
+          $video = document.createElement("video");
+          $video.setAttribute("src", url);
+          $video.muted = false;
+          $video.height = 240; // 👈️ in px
+          $video.width = 320; // 👈️ in px
+          $video.preload = "auto"; // intend to play through
+          $video.autoplay = true; // autoplay when loaded
+          $video.onerror = reject; // on error, reject
+          $video.onended = resolve; // when done, resolve
+          $video.oncanplaythrough = () => {
+            document
+              .querySelector(`[data-loader = "${videoId}"]`)
+              .classList.add("--hidden");
+            document.getElementById("root").classList.toggle("--hidden");
+            const $frame = document.createElement("div");
+            $frame.classList.add("frame");
+            document.querySelector("body").appendChild($frame);
+            $frame.appendChild($video);
+            const $stop = document.createElement("img");
+            $stop.src = "./assets/close.svg";
+            $stop.classList.add("close", "--hidden");
+            $frame.appendChild($stop);
+
+            $frame.addEventListener("mouseenter", () =>
+              $stop.classList.toggle("--hidden")
+            );
+            $frame.addEventListener("mouseleave", () =>
+              $stop.classList.toggle("--hidden")
+            );
+            $stop.addEventListener("click", (e) => {
+              $video.pause();
+              resolve(source.videoDetails.videoId);
+            });
+
+            const $styles = document.getElementById("dynamic-styles");
+            $styles.innerHTML += `
+            .frame{
+              position: relative;
+              width: 100vw;
+              height: 100vh;
+              background-color: #000;
+            }
+            video{
+              min-width: 100%;
+              min-height: 100%;
+            }
+            .close{
+               width: 50px;
+               height: 50px;
+               border: 0;
+               position: absolute;
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+            }
+              `;
+          };
+        });
+        Player.then((source) => {
+          console.log("resolve");
+          document.querySelector(".frame").remove();
+          document.getElementById("root").classList.toggle("--hidden");
+          document
+            .querySelector(`[data-source_video = "${source}"]`)
+            .classList.toggle("--hidden");
+        }).catch((err) => {
+          document
+            .querySelector(`[data-loader = "${videoId}"]`)
+            .classList.add("--hidden");
+          document
+            .querySelector(`[data-source_video = "${videoId}"]`)
+            .classList.toggle("--hidden");
+        });
+        return Player;
+      };
+      const VideoInfo = async function (target) {
+        const source = target.dataset.source_video;
+        target.classList.toggle("--hidden");
+        document
+          .querySelector(`[data-loader = "${source}"]`)
+          .classList.remove("--hidden");
+        await ajax({
+          url: `${VIDEO}${source}`,
+          prop: {
+            method: "GET",
+            headers: {
+              "X-RapidAPI-Key":
+                "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
+              "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
+            },
+          },
+          cbSuccess: (search) => VideoPlay(search, target),
+        });
+      };
     </script>
   </body>
 </html>
