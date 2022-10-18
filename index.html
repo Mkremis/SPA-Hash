@@ -814,7 +814,8 @@
         $form.style.display = "none";
         $form.appendChild($input);
 
-        if (location.hash.includes("#/search") || location.hash === "#/") {
+        if (location.hash.includes("#/search") || location.hash === "#/" ||
+          !location.hash) {
           $form.style.display = "block";
           $input.placeholder = "search posts..";
           $input.value = localStorage.getItem("wpSearch");
