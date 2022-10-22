@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -24,12 +24,14 @@
         YOUTUBE =
           "https://youtube-search-and-download.p.rapidapi.com/trending?type=mu&hl=en&gl=US",
         VIDEO = `https://youtube-search-and-download.p.rapidapi.com/video?id=`,
-        GENIUSAPI = `https://genius.p.rapidapi.com/search?q=`,
+        GENIUSAPI = `https://genius-song-lyrics1.p.rapidapi.com/search?q=`,
+        LYRICS = `https://genius-song-lyrics1.p.rapidapi.com/songs/`,
         DEEZER = `https://deezerdevs-deezer.p.rapidapi.com/search?q=`,
         CHART = `https://shazam-core.p.rapidapi.com/v1/charts/world`;
 
       let page = 1,
-        audio = null;
+        audio = null,
+        main_class = "Home";
 
       document.addEventListener("DOMContentLoaded", App);
       document.addEventListener("click", (e) => {
@@ -37,6 +39,9 @@
         if (target.matches(".panel-btn") || target.matches(".panel-btn *")) {
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
+        }
+        if (target.matches(".search-link")) {
+          main_class = target.textContent;
         }
         if (target.matches(".menu a")) {
           document.querySelector(".panel-btn").classList.toggle("is-active");
@@ -58,8 +63,10 @@
         $root.appendChild(Header());
         $root.appendChild(MenuModal());
         $root.appendChild(Main());
+        document.getElementById("main").classList.add(main_class);
         $root.appendChild(hamburger());
         $root.appendChild(Loader());
+        ErrorMessage();
         Router();
         InfiniteScroll();
       }
@@ -72,16 +79,13 @@
           .then((json) => cbSuccess(json))
           .catch((err) => {
             console.log(err);
-            let message = err.statusText || "ocurrio un error";
-            document
-              .getElementById("root")
-              .insertAdjacentHTML(
-                "afterbegin",
-                `<div class ="error"><p>error ${err.status} : ${message}</p></div>`
-              );
+            let message = err.statusText || "ocurrio un error",
+              $error = document.querySelector(".error");
             document.querySelector(".loader").style.display = "none";
+            $error.innerHTML = `<p>error ${err.status} : ${message}</p>`;
+            $error.classList.remove("--hidden");
             setTimeout(() => {
-              document.querySelector(".error").style.display = "none";
+              $error.classList.add("--hidden");
             }, 2500);
           });
       }
@@ -98,11 +102,13 @@
             },
           },
           cbSuccess: (tops) => {
-            top10 = tops
+            let topX = tops
               .filter((_, index) => index < 10)
               .map((top) => `${top.subtitle} ${top.title}`);
+            top10 = topX.map((top) => top.replace(/\s/g, "%20"));
           },
         });
+
         return top10;
       }
       // INFINITE SCROLL:
@@ -161,194 +167,253 @@
         });
       }
       // ROUTER:
-      async function Router() {
-        let { hash } = location;
-        const $main = document.getElementById("main");
-        $main.innerHTML = null;
+      const Routes = {
+        Home: {
+          dataLoad: async ($main) => {
+            await ajax({
+              url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
+              cbSuccess: (site) => {
+                document
+                  .querySelector(".center-header")
+                  .appendChild(Title(site.description.rendered));
+                document.querySelector(".attachment a").href =
+                  "https://es.rollingstone.com/";
+                document.querySelector(".attachment a").target = "_blank";
+              },
+            });
+            await ajax({
+              url: POSTS,
+              cbSuccess: (posts) => {
+                $main.innerHTML = null;
+                let $template = "";
+                posts.forEach((post) => ($template += PostCards(post)));
+                $main.innerHTML = $template;
+              },
+            });
+          },
+        },
+        Search: {
+          dataLoad: async ($main) => {
+            await ajax({
+              url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
+              cbSuccess: (site) => {
+                document
+                  .querySelector(".center-header")
+                  .insertAdjacentElement(
+                    "beforeend",
+                    Title(site.description.rendered)
+                  );
+                document.querySelector(".attachment a").href =
+                  "https://es.rollingstone.com/";
+                document.querySelector(".attachment a").target = "_blank";
+              },
+            });
 
-        if (!hash || hash === "#/") {
-          await ajax({
-            url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
-            cbSuccess: (site) => {
-              document
-                .querySelector(".header")
-                .insertAdjacentElement(
-                  "beforeend",
-                  Title(site.description.rendered)
-                );
-              document.querySelector(".attachment a").href =
-                "https://es.rollingstone.com/";
-              document.querySelector(".attachment a").target = "_blank";
-            },
-          });
-
-          await ajax({
-            url: POSTS,
-            cbSuccess: (posts) => {
-              let $template = "";
-              posts.forEach((post) => ($template += PostCards(post)));
-
-              $main.innerHTML = $template;
-            },
-          });
-        } else if (hash.includes("#/search")) {
-          await ajax({
-            url: "https://es.rollingstone.com/wp-json/wp/v2/media/25066",
-            cbSuccess: (site) => {
-              document
-                .querySelector(".header")
-                .insertAdjacentElement(
-                  "beforeend",
-                  Title(site.description.rendered)
-                );
-              document.querySelector(".attachment a").href =
-                "https://es.rollingstone.com/";
-              document.querySelector(".attachment a").target = "_blank";
-            },
-          });
-
-          let query = localStorage.getItem("wpSearch");
-          if (!query) {
-            document.querySelector(".loader").style.display = "none";
-            return false;
-          }
-          await ajax({
-            url: `${SEARCH}${query}`,
-            cbSuccess: (search) => {
-              let $template = "";
-              if (search.length === 0) {
-                $template = `
+            let query = localStorage.getItem("wpSearch");
+            if (!query) {
+              return false;
+            }
+            await ajax({
+              url: `${SEARCH}${query}`,
+              cbSuccess: (search) => {
+                let $template = "";
+                if (search.length === 0) {
+                  $template = `
                        <p class="error">
                            No se encontraron resultados con la busqueda: <mark>${query}</mark>
                         </p>
                         `;
-              } else {
-                console.log(search);
-                search.forEach((post) => ($template += SearchCard(post)));
-              }
-
-              $main.innerHTML = $template;
-            },
-          });
-        } else if (hash.includes("#/music")) {
-          let siteInfo =
-            "<a href='https://genius.com/' target='_blank'><img id = 'genius' src='./assets/genius-lyrics-696x442.png' alt='Genius'></a>";
-          document
-            .querySelector(".header")
-            .insertAdjacentElement("beforeend", Title(siteInfo));
-
-          let query = localStorage.getItem("musicSearch");
-          if (!query) {
-            document.querySelector(".loader").style.display = "none";
-            return false;
-          }
-
-          await ajax({
-            url: `${GENIUSAPI}${query}`,
-            prop: {
-              method: "GET",
-              headers: {
-                "x-rapidapi-key":
-                  "ce19d0164fmsh3d383efc0e85ce5p16dcb1jsnb1a4a3c79541",
-                "x-rapidapi-host": "genius.p.rapidapi.com",
-              },
-            },
-            cbSuccess: ({ response }) => {
-              // console.log(response);
-              let $template = "";
-              if (response.hits.length === 0) {
-                $template = `
-                     <p class="error">
-                         No se encontraron resultados con la busqueda: <mark>${query}</mark>
-                      </p>
-                      `;
-              } else {
-                response.hits.forEach((hit) => ($template += SearchMusic(hit)));
-              }
-              $main.innerHTML = $template;
-            },
-          });
-        } else if (hash.includes("#/artist")) {
-          let query = [],
-            $template = "";
-          if (localStorage.getItem("artistSearch")) {
-            query.push(localStorage.getItem("artistSearch"));
-          } else {
-            query = await Charts();
-          }
-          document.querySelector(".loader").style.display = "none";
-
-          query.forEach(async (element) => {
-            console.log(element);
-            await ajax({
-              url: `${DEEZER}${element}`,
-              prop: {
-                method: "GET",
-                headers: {
-                  "X-RapidAPI-Key":
-                    "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
-                  "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
-                },
-              },
-              cbSuccess: (response) => {
-                if (response.length === 0) {
-                  $template = `<p class="error">No se encontraron resultados con la busqueda: <mark>${query}</mark></p> `;
                 } else {
-                  $main.classList.replace("grid-fluid", "flex-row");
-                  let { data } = response;
-
-                  if (query.length > 1) {
-                    $template += Deezer(data[0]);
-                  } else {
-                    data.forEach((element, index) => {
-                      $template += Deezer(element);
-                    });
-                  }
+                  search.forEach((post) => ($template += SearchCard(post)));
                 }
                 $main.innerHTML = $template;
               },
             });
-          });
-        } else if (hash === "#/youtube") {
-          await ajax({
-            url: YOUTUBE,
-            prop: {
-              method: "GET",
-              headers: {
-                "X-RapidAPI-Key":
-                  "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
-                "X-RapidAPI-Host": "youtube-search-and-download.p.rapidapi.com",
+          },
+        },
+        Genius: {
+          dataLoad: async ($main) => {
+            let siteInfo =
+              "<a href='https://genius.com/' target='_blank'><img id = 'genius' src='./assets/genius-lyrics-696x442.png' alt='Genius'></a>";
+            document
+              .querySelector(".center-header")
+              .insertAdjacentElement("beforeend", Title(siteInfo));
+
+            let query = localStorage.getItem("musicSearch");
+            if (!query) {
+              let top10 = await Charts();
+              query = top10[0];
+              document.querySelector(".loader").classList.add("--hidden");
+            }
+
+            await ajax({
+              url: `${GENIUSAPI}${query}`,
+              prop: {
+                method: "GET",
+                headers: {
+                  "x-rapidapi-key":
+                    "ce19d0164fmsh3d383efc0e85ce5p16dcb1jsnb1a4a3c79541",
+                  "x-rapidapi-host": "genius.p.rapidapi.com",
+                },
               },
-            },
-            cbSuccess: ({ contents }) => {
-              console.log(contents);
-              let $template = "";
-              if (contents.length === 0) {
-                $template = `
+              cbSuccess: ({ response }) => {
+                // console.log(response);
+                let $template = "";
+                if (response.hits.length === 0) {
+                  $template = `
+                     <p class="error">
+                         No se encontraron resultados con la busqueda: <mark>${query}</mark>
+                      </p>
+                      `;
+                  document.querySelector(".loader").classList.add("--hidden");
+                } else {
+                  response.hits.forEach(
+                    (hit) => ($template += SearchMusic(hit))
+                  );
+                }
+                $main.innerHTML = $template;
+                document.querySelector(".loader").classList.add("--hidden");
+              },
+            });
+          },
+        },
+        Deezer: {
+          dataLoad: async ($main) => {
+            let query = [],
+              $template = "";
+            if (localStorage.getItem("artistSearch")) {
+              query.push(localStorage.getItem("artistSearch"));
+            } else {
+              query = await Charts();
+            }
+            query.forEach(async (element) => {
+              await ajax({
+                url: `${DEEZER}${element}`,
+                prop: {
+                  method: "GET",
+                  headers: {
+                    "X-RapidAPI-Key":
+                      "49d9c22181msh41372344189763fp1c86dajsn7ad9035f998d",
+                    "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
+                  },
+                },
+                cbSuccess: (response) => {
+                  if (response.length === 0) {
+                    $template = `<p class="error">No se encontraron resultados con la busqueda: <mark>${query}</mark></p> `;
+                  } else {
+                    $main.classList.replace("grid-fluid", "flex-row");
+                    let { data } = response;
+                    if (query.length > 1) {
+                      $template += Deezer(data[0]);
+                    } else {
+                      data.forEach((element, index) => {
+                        $template += Deezer(element);
+                      });
+                    }
+                  }
+                  $main.innerHTML = $template;
+                },
+              });
+            });
+            document.querySelector(".loader").classList.add("--hidden");
+          },
+        },
+        Youtube: {
+          dataLoad: async ($main) => {
+            await ajax({
+              url: YOUTUBE,
+              prop: {
+                method: "GET",
+                headers: {
+                  "X-RapidAPI-Key":
+                    "beb5fe007fmsh24089c307704c5dp13a623jsn4b8e75a7763a",
+                  "X-RapidAPI-Host":
+                    "youtube-search-and-download.p.rapidapi.com",
+                },
+              },
+              cbSuccess: ({ contents }) => {
+                let $template = "";
+                if (contents.length === 0) {
+                  $template = `
                        <p class="error">
                         Error recibiendo datos
                         </p>
                         `;
-              } else {
-                contents.forEach((content) => ($template += Youtube(content)));
-              }
+                } else {
+                  contents.forEach(
+                    (content) => ($template += Youtube(content))
+                  );
+                }
+                $main.classList.add("youtube-grid-fluid");
+                $main.innerHTML = $template;
+              },
+            });
+            document.querySelector(".loader").classList.add("--hidden");
+          },
+        },
+        Contact: {
+          dataLoad: ($main) => {
+            $main.appendChild(ContactForm());
+            document.querySelector(".loader").classList.add("--hidden");
+          },
+        },
+        Posts: {
+          dataLoad: async ($main) => {
+            await ajax({
+              url: `${POST}/${localStorage.getItem("wpPostId")}`,
+              cbSuccess: (post) => {
+                $main.innerHTML = Post(post);
+              },
+            });
+            document.querySelector(".loader").classList.add("--hidden");
+          },
+        },
+        Lyrics: {
+          dataLoad: async ($main) => {
+            await ajax({
+              url: `${LYRICS}${localStorage.getItem("wpPostId")}/lyrics`,
+              prop: {
+                method: "GET",
+                headers: {
+                  "X-RapidAPI-Key":
+                    "c6a858c427msha9bfba80e0f2395p1c4efdjsne10ab07c3300",
+                  "X-RapidAPI-Host": "genius-song-lyrics1.p.rapidapi.com",
+                },
+              },
+              cbSuccess: (lyric) => {
+                if (!lyric.response) {
+                  alert("No lyrics found for the song");
+                  window.history.back();
+                } else {
+                  document.querySelector(".loader").classList.add("--hidden");
+                  $main.innerHTML = Lyrics(lyric);
+                }
+              },
+            });
+          },
+        },
+      };
+      async function Router() {
+        let { hash } = location;
+        const $main = document.getElementById("main");
 
-              $main.innerHTML = $template;
-            },
-          });
-        } else if (hash === "#/Contacto") {
-          $main.appendChild(ContactForm());
+        if (!hash || hash === "#/") {
+          Routes["Home"].dataLoad($main);
+        } else if (hash.includes("#/search?")) {
+          Routes["Search"].dataLoad($main);
+        } else if (hash.includes("#/genius")) {
+          Routes["Genius"].dataLoad($main);
+        } else if (hash.includes("lyrics")) {
+          Routes["Lyrics"].dataLoad($main);
+        } else if (hash.includes("#/deezer")) {
+          Routes["Deezer"].dataLoad($main);
+        } else if (hash === "#/youtube") {
+          Routes["Youtube"].dataLoad($main);
+        } else if (hash === "#/contact") {
+          Routes["Contact"].dataLoad($main);
         } else {
-          await ajax({
-            url: `${POST}/${localStorage.getItem("wpPostId")}`,
-            cbSuccess: (post) => {
-              // console.log(post);
-              $main.innerHTML = Post(post);
-            },
-          });
+          Routes["Posts"].dataLoad($main);
         }
-
-        document.querySelector(".loader").style.display = "none";
       }
       // COMPONENTS:
       class Components {
@@ -366,34 +431,35 @@
           this.duration = options.duration || null;
           this.channelName = options.channelName || null;
           this.viewCountText = options.viewCountText || null;
-          this.url = options.url;
-          this.link = options.slug || options.url;
-          this.target = this.setTarget(this.url);
+          this.link = options.slug || null;
+          // this.target = this.setTarget(this.url);
         }
-        setTarget(url) {
-          if (this.url) {
-            return `target="_blank"`;
-          } else {
-            return "";
-          }
-        }
+        // setTarget(url) {
+        //   if (this.url) {
+        //     return `target="_blank"`;
+        //   } else {
+        //     return "";
+        //   }
+        // }
         CardMaker() {
           return `
           <article class="post-card" data-id="${this.id}">
-          <div class="post-card__header">
-          <a href="${this.link}" data-id="${this.id}" ${this.target}>
-          <img src="${this.img}" alt="${this.title}" data-id="${this.id}"/>
-          </a>
-              <a href="${this.link}" data-id="${this.id}" ${this.target}>
+            <a href="${this.link}" data-id="${this.id}">
+              <div class="post-card__header" data-id="${this.id}">
+                <img src="${this.img}" alt="${this.title}" data-id="${
+            this.id
+          }"/>
                 <p data-id="${this.id}">${this.title}</p>
-              </a>
-            </div>
-            <div class="post-card__description">
-              <p><time datetime="${this.date}">${this.date}</time></p>
-              <p class="post-card__description-author">
-          ${this.author.toLowerCase()}
-              </p>
-            </div>
+              </div data-id="${this.id}">
+              <div class="post-card__description" data-id="${this.id}">
+                <p data-id="${this.id}"><time datetime="${
+            this.date
+          }" data-id="${this.id}">${this.date}</time></p>
+                <p class="post-card__description-author" data-id="${
+                  this.id
+                }">${this.author.toLowerCase()}</p>
+              </div>
+            </a>
           </article>
             `;
         }
@@ -535,30 +601,30 @@
         $form.action = "https://formsubmit.co/martinkremis@hotmail.com";
         $form.method = "POST";
         let $legend = document.createElement("legend");
-        $legend.textContent = "Envianos tus comentarios";
+        $legend.textContent = "Send us your comments";
         $form.appendChild($legend);
 
         const fields = [
           {
             name: "name",
             type: "text",
-            placeholder: "Escribe tu nombre",
-            title: "Nombre solo acepta letras y espacios en blanco",
+            placeholder: "Write your name",
+            title: "Name only accepts letters and blank spaces",
             pattern: "^[A-Za-zÑñÁáÉéÍíÓóÚúÜü\\s]+$",
           },
           {
             name: "email",
             type: "email",
-            placeholder: "Escribe tu correo electronico",
-            title: "email no valido",
+            placeholder: "Write your email",
+            title: "invalid email",
             pattern:
               "^[a-z0-9]+(\\.[_a-z0-9]+)*@[a-z0-9-]+(\\.[a-z0-9-]+)*(\\.[a-z]{2,15})$",
           },
           {
             name: "subject",
             type: "text",
-            placeholder: "Asunto a tratar",
-            title: "el asunto no puede estar vacio",
+            placeholder: "Subject",
+            title: "subject cannot be empty",
             pattern: "^(w+S+)$",
           },
         ];
@@ -578,7 +644,7 @@
         /////////////////textarea////////////////////////
         const $txtarea = document.createElement("textarea");
         $txtarea.name = "comments";
-        $txtarea.placeholder = "Escribe tus comentarios";
+        $txtarea.placeholder = "Write your comments";
         $txtarea.title = "maximo permitido 256 caracteres";
         $txtarea.setAttribute("data-pattern", "^.{1,255}$");
         $txtarea.cols = "50";
@@ -589,7 +655,7 @@
         /////////////////submit////////////////////////
         const $submit = document.createElement("input");
         $submit.type = "submit";
-        $submit.value = "Enviar";
+        $submit.value = "Submit";
         $form.appendChild($submit);
         /////////////////confirm////////////////////////
         $div = document.createElement("div");
@@ -710,8 +776,14 @@
       function Header() {
         const $header = document.createElement("header");
         $header.classList.add("header");
-        $header.appendChild(Menu());
-        $header.appendChild(SearchForm());
+        const $leftH = document.createElement("div"),
+          $centerH = document.createElement("div"),
+          $rightH = document.createElement("div");
+        $centerH.classList.add("center-header");
+        $rightH.classList.add("right-header");
+        $header.append($leftH, $centerH, $rightH);
+        $centerH.appendChild(Menu());
+        $rightH.appendChild(SearchForm());
         return $header;
       }
       function Loader() {
@@ -731,15 +803,15 @@
         const $menu = document.createElement("nav");
         $menu.classList.add("menu-top");
         $menu.innerHTML = `
-               <a href="#/">Home</a>
+               <a href="#/" class="search-link">Home</a>
                <span>-</span>
-               <a href="#/music" class="search-link">Genius</a>
+               <a href="#/genius" class="search-link">Lyrics</a>
                <span>-</span>
                <a href="#/youtube" class="search-link">Youtube</a>
                <span>-</span>
-                <a href="#/artist"class="search-link">Deezer</a>
+                <a href="#/deezer"class="search-link">Deezer</a>
                <span>-</span>
-               <a href="#/Contacto">Contacto</a>
+               <a href="#/contact" class="search-link">Contact</a>
                `;
         return $menu;
       }
@@ -747,13 +819,13 @@
         const $menuModal = document.createElement("aside");
         $menuModal.classList.add("panel");
         $menuModal.innerHTML = `
-               <nav class = "menu">
-               <a href="#/">Home</a>
-                <a href="#/music" class="search-link">Genius</a>
-                <a href="#/youtube" class="search-link">Youtube</a>
-                <a href="#/artist"class="search-link">Deezer</a>
-               <a href="#/Contacto">Contacto</a>
-               </nav>`;
+            <nav class = "menu">
+              <a href="#/" class="search-link">Home</a>
+              <a href="#/genius" class="search-link">Lyrics</a>
+              <a href="#/youtube" class="search-link">Youtube</a>
+              <a href="#/deezer"class="search-link">Deezer</a>
+              <a href="#/contact" class="search-link">Contact</a>
+            </nav>`;
         return $menuModal;
       }
       function Post(props) {
@@ -771,7 +843,6 @@
                `;
       }
       function PostCards(props) {
-        // console.log(props);
         let {
             _embedded,
             date,
@@ -794,7 +865,7 @@
         // console.log(props);
         let { id, title, _embedded } = props,
           author = _embedded.self[0].yoast_head_json.author,
-          slug = _embedded.self[0].slug,
+          slug = `#/${_embedded.self[0].slug}`,
           date = _embedded.self[0].date,
           img = _embedded.self[0].yoast_head_json.og_image
             ? _embedded.self[0].yoast_head_json.og_image[0].url
@@ -814,18 +885,21 @@
         $form.style.display = "none";
         $form.appendChild($input);
 
-        if (location.hash.includes("#/search") || location.hash === "#/" ||
-          !location.hash) {
+        if (
+          location.hash.includes("#/search") ||
+          location.hash === "#/" ||
+          !location.hash
+        ) {
           $form.style.display = "block";
           $input.placeholder = "search posts..";
           $input.value = localStorage.getItem("wpSearch");
         }
-        if (location.hash.includes("#/music")) {
+        if (location.hash.includes("#/genius")) {
           $form.style.display = "block";
           $input.placeholder = "search music info...";
           $input.value = localStorage.getItem("musicSearch");
         }
-        if (location.hash.includes("#/artist")) {
+        if (location.hash.includes("#/deezer")) {
           $form.style.display = "block";
           $input.placeholder = "listen music...";
           $input.value = localStorage.getItem("artistSearch");
@@ -842,40 +916,39 @@
             localStorage.setItem("wpSearch", e.target.search.value);
             location.hash = `#/search?search=${e.target.search.value}`;
           }
-          if (location.hash.includes("#/music")) {
+          if (location.hash.includes("#/genius")) {
             localStorage.setItem("musicSearch", e.target.search.value);
-            location.hash = `#/music=${e.target.search.value}`;
+            location.hash = `#/genius=${e.target.search.value}`;
           }
-          if (location.hash.includes("#/artist")) {
+          if (location.hash.includes("#/deezer")) {
             localStorage.setItem("artistSearch", e.target.search.value);
-            location.hash = `#/artist=${e.target.search.value}`;
+            location.hash = `#/deezer=${e.target.search.value}`;
           }
         });
 
         return $form;
       }
       function SearchMusic(props) {
-        console.log(props);
         let {
             id,
             full_title,
-            header_image_thumbnail_url,
+            header_image_url,
             primary_artist,
             release_date_for_display,
-            url,
+            path,
           } = props.result,
           artist = primary_artist.name,
+          slug = `#${path}`,
           title = full_title,
           dateFormat = release_date_for_display,
-          img = header_image_thumbnail_url || "./assets/favicon.svg";
-
+          img = header_image_url || "./assets/favicon.svg";
         let card = new Components({
           img,
           title,
           dateFormat,
-          url,
           id,
           artist,
+          slug,
         });
         return card.CardMaker();
       }
@@ -962,6 +1035,35 @@
             }
               `;
       }
+      function ErrorMessage() {
+        document
+          .getElementById("root")
+          .insertAdjacentHTML(
+            "afterbegin",
+            `<div class ="error --hidden"></div>`
+          );
+      }
+      function Lyrics(props) {
+        let html = props.response.lyrics.lyrics.body.html,
+          title = props.response.lyrics.tracking_data.title,
+          date = props.response.lyrics.tracking_data.created_at,
+          dateFormated = new Date(date).toLocaleDateString();
+        document.getElementById("dynamic-styles").innerHTML += `
+          .post-page a {
+            cursor: none;
+            color: #000;
+          }`;
+        return `
+               <section class="post-page">
+                 <aside>
+                   <h2>${title}</h2>
+                   <time datetime="2022-09-15">${dateFormated}</time>
+                 </aside>
+                 <hr>
+                 <article>${html}</article>
+               </section>
+               `;
+      }
       // MEDIA
       function Play(target, duration) {
         let source = target.dataset.source;
@@ -998,15 +1100,12 @@
             };
           }
         }).then((res) => {
-          document
-            .querySelector(`[data-source = "${source}"]`)
-            .classList.remove("--hidden");
-          document
-            .querySelector(`[data-pause = "${source}"]`)
-            .classList.add("--hidden");
-          document
-            .querySelector(`[data-playing = "${source}"]`)
-            .classList.add("--hidden");
+          let play = document.querySelector(`[data-source = "${source}"]`),
+            pause = document.querySelector(`[data-pause = "${source}"]`),
+            wave = document.querySelector(`[data-playing = "${source}"]`);
+          if (play) play.classList.remove("--hidden");
+          if (pause) pause.classList.add("--hidden");
+          if (wave) wave.classList.add("--hidden");
         });
       }
       function PlayAudio(target) {
@@ -1023,15 +1122,12 @@
           Play(target, audio.duration);
         } else {
           audio.pause();
-          document
-            .querySelector(`[data-source = "${audio.src}"]`)
-            .classList.remove("--hidden");
-          document
-            .querySelector(`[data-pause = "${audio.src}"]`)
-            .classList.add("--hidden");
-          document
-            .querySelector(`[data-playing = "${audio.src}"]`)
-            .classList.add("--hidden");
+          let play = document.querySelector(`[data-source = "${audio.src}"]`);
+          (pause = document.querySelector(`[data-pause = "${audio.src}"]`)),
+            (wave = document.querySelector(`[data-playing = "${audio.src}"]`));
+          if (play) play.classList.remove("--hidden");
+          if (pause) pause.classList.add("--hidden");
+          if (wave) wave.classList.add("--hidden");
           Play(target);
         }
       }
