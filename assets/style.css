@@ -6,7 +6,7 @@
   --main-modal-color: rgba(22, 22, 22, 0.85);
   --second-modal-color: rgba(34, 34, 34, 0.85);
   --container-width: 1200px;
-  --Dark-grayish-blue: #bdbfc2;
+  --button-color: rgba(50, 50, 50, 0.5);
   --Very-vark-blue: hsl(220, 13%, 13%);
 }
 
@@ -56,13 +56,13 @@ a:hover {
 
 .search-form input {
   flex-grow: 1;
-  width: 200px;
+  width: 250px;
   display: block;
   padding: 0.25rem;
   border-radius: 0.25rem;
   font-size: 12px;
   color: gray;
-  border: 3px solid #4bb2e1;
+  border: 3px solid #4bb2e190;
   box-shadow: 0px 3px 2px 0px rgba(0, 0, 0, 0.12);
 }
 
@@ -80,12 +80,16 @@ a:hover {
 
 .header > div:nth-child(odd) {
   flex-basis: 25%;
+  flex-grow: 1;
 }
 .center-header {
   flex-basis: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.logo {
+  max-width: 50%;
 }
 
 .right-header {
@@ -103,14 +107,13 @@ a:hover {
     align-items: baseline;
   }
 }
-#genius {
-  width: 50%;
-  height: auto;
-}
 
 img {
   max-width: 100%;
   height: auto;
+}
+#genius {
+  max-width: 160px;
 }
 .loader {
   margin: 1rem auto;
@@ -120,8 +123,7 @@ img {
 }
 
 .grid-fluid {
-  margin: 1rem auto;
-  max-width: 90%;
+  margin: 1rem 5%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
 }
@@ -129,7 +131,7 @@ img {
 .post-card {
   margin: 1rem auto;
   padding: 1rem;
-  width: 80%;
+  width: 95%;
   background-color: var(--main-color);
   display: flex;
   flex-direction: column;
@@ -166,7 +168,7 @@ img {
 .post-page {
   margin: 1rem auto;
   padding: 1rem;
-  width: 80%;
+  width: 90%;
   background-color: var(--main-color);
 }
 .post-page > aside {
@@ -409,7 +411,30 @@ img {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--Dark-grayish-blue);
+  background-color: var(--button-color);
+}
+/* *****************  scroll-top-btn  **************** */
+
+.scroll-top-btn {
+  position: fixed;
+  z-index: 999;
+  bottom: 1vh;
+  left: 1vw;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  font-size: 2rem;
+  font-weight: bold;
+  background-color: var(--button-color);
+  color: var(--second-modal-color);
+  cursor: pointer;
+  outline: 0;
+  border: 0;
+  transition: all 0.3s ease-out;
+}
+
+.scroll-top-btn:hover {
+  opacity: 0.7;
 }
 
 /* *****************  panel-desplegable  **************** */
