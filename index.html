@@ -64,7 +64,7 @@
         $root.appendChild(MenuModal());
         $root.appendChild(Main());
         $root.appendChild(hamburger());
-        $root.innerHtml = TopButton();
+        $root.appendChild(TopButton());
         $root.appendChild(Loader());
         ErrorMessage();
         Router();
@@ -1093,7 +1093,10 @@
                `;
       }
       function TopButton() {
-        return `<input type="button" class="scroll-top-btn --hidden">&#11014`
+        const $scrollTopButton = document.createElement("button");
+        $scrollTopButton.classList.add("scroll-top-btn", "--hidden");
+        $scrollTopButton.innerHTML = "&#11014";
+        return $scrollTopButton;
       }
       // MEDIA
       function Play(target, duration) {
