@@ -64,7 +64,7 @@
         $root.appendChild(MenuModal());
         $root.appendChild(Main());
         $root.appendChild(hamburger());
-        $root.appendChild(TopButton());
+        $root.innerHtml = TopButton();
         $root.appendChild(Loader());
         ErrorMessage();
         Router();
