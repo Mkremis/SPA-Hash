@@ -30,8 +30,7 @@
         CHART = `https://shazam-core.p.rapidapi.com/v1/charts/world`;
 
       let page = 1,
-        audio = null,
-        main_class = "Home";
+        audio = null;
 
       document.addEventListener("DOMContentLoaded", App);
       document.addEventListener("click", (e) => {
@@ -40,9 +39,6 @@
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
         }
-        if (target.matches(".search-link")) {
-          main_class = target.textContent;
-        }
         if (target.matches(".menu a")) {
           document.querySelector(".panel-btn").classList.toggle("is-active");
           document.querySelector(".panel").classList.toggle("is-active");
@@ -50,6 +46,10 @@
         if (target.matches(".post-card a *")) {
           localStorage.setItem("wpPostId", target.dataset.id);
         }
+        if (e.target.matches(".scroll-top-btn")) {
+          window.scroll({ top: 0, behavior: "smooth" });
+        }
+
         return false;
       });
       window.addEventListener("hashchange", () => {
@@ -63,8 +63,8 @@
         $root.appendChild(Header());
         $root.appendChild(MenuModal());
         $root.appendChild(Main());
-        document.getElementById("main").classList.add(main_class);
         $root.appendChild(hamburger());
+        $root.appendChild(TopButton());
         $root.appendChild(Loader());
         ErrorMessage();
         Router();
@@ -114,6 +114,7 @@
       // INFINITE SCROLL:
       async function InfiniteScroll() {
         let endPosts;
+        const $scrollTopBtn = document.querySelector(".scroll-top-btn");
         window.addEventListener("scroll", async (e) => {
           let query = localStorage.getItem("wpSearch"),
             apiURL,
@@ -129,8 +130,15 @@
           //   `scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight:${scrollHeight}`
           // );
 
+          if (scrollTop > 400) {
+            $scrollTopBtn.classList.remove("--hidden");
+          } else {
+            $scrollTopBtn.classList.add("--hidden");
+          }
+
           if (scrollTop + clientHeight + 70 >= scrollHeight && !endPosts) {
             page++;
+            let main_active = document.getElementById("main").dataset.active;
             if (!hash || hash === "#/") {
               apiURL = `${POSTS}&page=${page}`;
               Component = PostCards;
@@ -155,9 +163,10 @@
                   // console.log(post);
                   $template += Component(post);
                 });
-                document
-                  .getElementById("main")
-                  .insertAdjacentHTML("beforeend", $template);
+                let $main = document.querySelector(
+                  `[data-active="${main_active}"]`
+                );
+                if ($main) $main.insertAdjacentHTML("beforeend", $template);
                 document.querySelector(".loader").style.display = "none";
               },
             });
@@ -234,7 +243,7 @@
         Genius: {
           dataLoad: async ($main) => {
             let siteInfo =
-              "<a href='https://genius.com/' target='_blank'><img id = 'genius' src='./assets/genius-lyrics-696x442.png' alt='Genius'></a>";
+              "<a href='https://genius.com/' target='_blank'><img id = 'genius' src='./assets/genius.png' alt='Genius'></a>";
             document
               .querySelector(".center-header")
               .insertAdjacentElement("beforeend", Title(siteInfo));
@@ -279,6 +288,12 @@
         },
         Deezer: {
           dataLoad: async ($main) => {
+            let siteInfo =
+              "<a href='https://www.deezer.com/' target='_blank'><img id = 'deezer' src='./assets/deezer.avif' alt='Deezer'></a>";
+            document
+              .querySelector(".center-header")
+              .insertAdjacentElement("beforeend", Title(siteInfo));
+
             let query = [],
               $template = "";
             if (localStorage.getItem("artistSearch")) {
@@ -332,6 +347,7 @@
                 },
               },
               cbSuccess: ({ contents }) => {
+                console.log(contents);
                 let $template = "";
                 if (contents.length === 0) {
                   $template = `
@@ -398,20 +414,28 @@
         const $main = document.getElementById("main");
 
         if (!hash || hash === "#/") {
+          document.getElementById("main").dataset.active = "Home";
           Routes["Home"].dataLoad($main);
         } else if (hash.includes("#/search?")) {
+          document.getElementById("main").dataset.active = "Search";
           Routes["Search"].dataLoad($main);
         } else if (hash.includes("#/genius")) {
+          document.getElementById("main").dataset.active = "Genius";
           Routes["Genius"].dataLoad($main);
         } else if (hash.includes("lyrics")) {
+          document.getElementById("main").dataset.active = "Lyrics";
           Routes["Lyrics"].dataLoad($main);
         } else if (hash.includes("#/deezer")) {
+          document.getElementById("main").dataset.active = "Deezer";
           Routes["Deezer"].dataLoad($main);
         } else if (hash === "#/youtube") {
+          document.getElementById("main").dataset.active = "Youtube";
           Routes["Youtube"].dataLoad($main);
         } else if (hash === "#/contact") {
+          document.getElementById("main").dataset.active = "Contact";
           Routes["Contact"].dataLoad($main);
         } else {
+          document.getElementById("main").dataset.active = "Posts";
           Routes["Posts"].dataLoad($main);
         }
       }
@@ -807,9 +831,9 @@
                <span>-</span>
                <a href="#/genius" class="search-link">Lyrics</a>
                <span>-</span>
-               <a href="#/youtube" class="search-link">Youtube</a>
+               <a href="#/youtube" class="search-link">Video</a>
                <span>-</span>
-                <a href="#/deezer"class="search-link">Deezer</a>
+                <a href="#/deezer"class="search-link">Music</a>
                <span>-</span>
                <a href="#/contact" class="search-link">Contact</a>
                `;
@@ -822,8 +846,8 @@
             <nav class = "menu">
               <a href="#/" class="search-link">Home</a>
               <a href="#/genius" class="search-link">Lyrics</a>
-              <a href="#/youtube" class="search-link">Youtube</a>
-              <a href="#/deezer"class="search-link">Deezer</a>
+              <a href="#/youtube" class="search-link">Video</a>
+              <a href="#/deezer"class="search-link">Music</a>
               <a href="#/contact" class="search-link">Contact</a>
             </nav>`;
         return $menuModal;
@@ -1067,6 +1091,12 @@
                  <article>${html}</article>
                </section>
                `;
+      }
+      function TopButton() {
+        const $scrollTopButton = document.createElement("button");
+        $scrollTopButton.classList.add("scroll-top-btn", "--hidden");
+        $scrollTopButton.textContent = "⬆"; //&#11014
+        return $scrollTopButton;
       }
       // MEDIA
       function Play(target, duration) {
